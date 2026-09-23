@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JL Loja — Sistema pra loja de roupas</title>
+<meta name="description" content="Controle estoque por tamanho e cor, vendas, caixa e financeiro da sua loja de roupas num lugar só. Na nuvem, acesse de qualquer aparelho. R$119/mês.">
+<meta property="og:title" content="JL Loja — Sua loja de roupas organizada">
+<meta property="og:description" content="Estoque por tamanho/cor, PDV, vendas, caixa e financeiro. Na nuvem. R$119/mês.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--brand:#7c5cff;--brand2:#9d84ff;--brand-dk:#5b34d6;--ink:#141024;--gold:#c69a4e;--muted:#635d78;--soft:#f4f1fd;--line:#e9e4f8;--bg:#fff;--dark:#140f24;--ok:#16a34a;--sh:0 12px 34px rgba(90,50,160,.12);--sh-lg:0 30px 70px rgba(60,30,120,.28);--r:18px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+  h1,h2,h3,.logo{font-family:'Poppins',sans-serif;line-height:1.15}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-weight:800;font-family:'Poppins',sans-serif;font-size:16px;padding:16px 30px;border-radius:14px;border:none;cursor:pointer;box-shadow:0 10px 26px rgba(124,92,255,.38);transition:transform .15s,box-shadow .15s}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(124,92,255,.5)}
+  .btn.gold{background:linear-gradient(135deg,#caa257,#e8c987);color:#3a2c10;box-shadow:0 10px 26px rgba(198,154,78,.4)}
+  .btn.ghost{background:#fff;color:var(--brand);border:1.6px solid var(--line);box-shadow:none}
+  .btn.big{font-size:17px;padding:18px 36px}
+  header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  header .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .logo{font-size:20px;font-weight:800;letter-spacing:1px;color:var(--brand);display:flex;align-items:center;gap:8px}
+  .logo small{font-family:'Inter';font-weight:600;font-size:10.5px;letter-spacing:.4px;color:var(--muted)}
+  header .hgrp{display:flex;align-items:center;gap:10px}
+  header .btn{padding:11px 20px;font-size:14px}
+  header a.enter{font-weight:700;color:var(--brand);font-size:14px}
+  @media(max-width:560px){header .hide-sm{display:none}}
+  .hero{position:relative;overflow:hidden;background:radial-gradient(1200px 500px at 80% -10%,#ece6ff,transparent),linear-gradient(180deg,#faf9ff,#fff)}
+  .hero .wrap{display:grid;grid-template-columns:1.02fr .98fr;gap:40px;align-items:center;padding:60px 20px 56px}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;background:var(--soft);color:var(--brand-dk);font-weight:700;font-size:13px;padding:7px 14px;border-radius:999px;margin-bottom:18px}
+  .hero h1{font-size:42px;font-weight:800;letter-spacing:-.5px}
+  .hero h1 .hl{color:var(--brand)}
+  .hero p.sub{font-size:18px;color:var(--muted);margin-top:18px;max-width:520px}
+  .cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+  .trust{display:flex;flex-wrap:wrap;gap:16px;margin-top:22px;font-size:13.5px;color:var(--muted);font-weight:600}
+  .trust b{color:var(--gold)}
+  .hero-art img{width:100%;border-radius:14px;box-shadow:var(--sh-lg);border:1px solid var(--line)}
+  @media(max-width:860px){.hero .wrap{grid-template-columns:1fr;text-align:center;padding:44px 20px 36px}.hero h1{font-size:32px}.hero p.sub{margin-left:auto;margin-right:auto}.cta-row,.trust{justify-content:center}.hero-art{order:-1;margin-bottom:6px}}
+  section{padding:60px 0}
+  .sec-head{text-align:center;max-width:640px;margin:0 auto 40px}
+  .sec-head .kick{color:var(--brand);font-weight:800;font-size:13px;letter-spacing:1.5px;text-transform:uppercase}
+  .sec-head h2{font-size:32px;font-weight:800;margin-top:10px}
+  .sec-head p{color:var(--muted);margin-top:12px;font-size:16.5px}
+  @media(max-width:560px){.sec-head h2{font-size:26px}}
+  .feat-sec{background:linear-gradient(180deg,#faf7ff,#fff)}
+  .feats{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .feat{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:24px 20px;box-shadow:var(--sh)}
+  .feat .ic{width:46px;height:46px;border-radius:12px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:23px;margin-bottom:12px}
+  .feat h3{font-size:17px;margin-bottom:5px}
+  .feat p{color:var(--muted);font-size:14.5px}
+  .feat .soon{font-size:11px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.5px}
+  @media(max-width:860px){.feats{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.feats{grid-template-columns:1fr}}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .step{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:26px 22px}
+  .step .n{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-weight:800;font-family:'Poppins';display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:14px}
+  .step h3{font-size:18px;margin-bottom:6px}.step p{color:var(--muted);font-size:15px}
+  @media(max-width:760px){.steps{grid-template-columns:1fr}}
+  .price-sec{background:linear-gradient(160deg,#241546,#140f24);color:#fff}
+  .price-sec .sec-head h2{color:#fff}.price-sec .sec-head p{color:#c9bfe0}
+  .price-card{max-width:440px;margin:0 auto;background:#fff;color:var(--ink);border-radius:24px;padding:34px 30px;box-shadow:var(--sh-lg);text-align:center;position:relative;overflow:hidden}
+  .price-card .plan{font-family:'Poppins';font-weight:700;color:var(--brand);font-size:15px;letter-spacing:1px;text-transform:uppercase}
+  .price-card .val{font-family:'Poppins';font-weight:800;font-size:56px;line-height:1;margin:12px 0 2px}
+  .price-card .val small{font-size:20px;color:var(--muted);font-weight:600}
+  .price-card ul{list-style:none;text-align:left;margin:20px 0}
+  .price-card li{position:relative;padding-left:28px;margin-bottom:11px;font-size:15.5px}
+  .price-card li::before{content:"✓";position:absolute;left:0;color:var(--ok);font-weight:800}
+  .price-card .btn{width:100%;margin-top:6px}
+  .price-card .fine{font-size:12.5px;color:var(--muted);margin-top:14px}
+  .faq{max-width:760px;margin:0 auto}
+  details{background:#fff;border:1px solid var(--line);border-radius:14px;padding:4px 20px;margin-bottom:12px}
+  details summary{cursor:pointer;font-weight:700;font-family:'Poppins';font-size:16px;padding:16px 0;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  details summary::-webkit-details-marker{display:none}
+  details summary::after{content:"+";color:var(--brand);font-size:24px}
+  details[open] summary::after{content:"–"}
+  details p{color:var(--muted);padding:0 0 16px;font-size:15.5px}
+  .final{background:linear-gradient(135deg,var(--brand),var(--brand-dk));color:#fff;text-align:center}
+  .final h2{font-size:34px;font-weight:800}.final p{color:#e7ddff;margin:14px auto 26px;max-width:520px;font-size:17px}
+  @media(max-width:560px){.final h2{font-size:26px}}
+  footer{background:var(--dark);color:#b9aed4;padding:40px 0;font-size:14px}
+  footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;align-items:center}
+  footer .logo{color:#fff}footer a.wa{color:#fff;font-weight:700}
+  .legal{width:100%;border-top:1px solid rgba(255,255,255,.1);margin-top:18px;padding-top:16px;font-size:12.5px;color:#8f83b0;line-height:1.6}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="logo">🛍️ JL LOJA</div>
+    <div class="hgrp">
+      <a class="enter hide-sm" href="cadastro.html">Já sou assinante</a>
+      <a class="btn" href="https://www.asaas.com/c/7punqudnyfkrcsmc">Assinar</a>
+    </div>
+  </div>
+</header>
+
+<section class="hero" style="padding:0">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">🛍️ Pra lojas de roupas, brechós e boutiques</span>
+      <h1>Sua loja de roupas <span class="hl">organizada</span> — estoque, vendas e caixa num lugar só.</h1>
+      <p class="sub">Saiba exatamente o que tem no estoque (por tamanho e cor), registre vendas em segundos e acompanhe seu lucro de verdade. Tudo na nuvem, do celular ou do computador.</p>
+      <div class="cta-row">
+        <a class="btn big" href="https://www.asaas.com/c/7punqudnyfkrcsmc">Assinar por R$119/mês →</a>
+        <a class="btn ghost big" href="#recursos">Ver recursos</a>
+      </div>
+      <div class="trust">
+        <span>✓ Sem fidelidade</span>
+        <span>✓ <b>Acesso na nuvem</b></span>
+        <span>✓ Nota fiscal (em breve)</span>
+      </div>
+    </div>
+    <div class="hero-art"><img src="loja_dash.jpg" alt="Painel de controle da loja" loading="eager"></div>
+  </div>
+</section>
+
+<section id="recursos" class="feat-sec">
+  <div class="wrap">
+    <div class="sec-head"><div class="kick">Tudo que sua loja precisa</div><h2>Controle completo, sem planilha</h2></div>
+    <div class="feats">
+      <div class="feat"><div class="ic">📦</div><h3>Estoque por tamanho e cor</h3><p>Cada variação (P, M, G, cores) com seu próprio estoque e alerta de "acabando".</p></div>
+      <div class="feat"><div class="ic">🛒</div><h3>Venda rápida (PDV)</h3><p>Monte o carrinho, aplique desconto ou acréscimo e finalize — o estoque baixa sozinho.</p></div>
+      <div class="feat"><div class="ic">🧾</div><h3>Vendas e relatórios</h3><p>Total vendido, lucro estimado, ticket médio e vendas por forma de pagamento.</p></div>
+      <div class="feat"><div class="ic">💰</div><h3>Financeiro e caixa</h3><p>Compras de mercadoria, despesas e o resultado real do caixa — quanto sobrou no bolso.</p></div>
+      <div class="feat"><div class="ic">☁️</div><h3>Na nuvem</h3><p>Seus dados salvos no servidor. Acesse de qualquer aparelho, a qualquer hora.</p></div>
+      <div class="feat"><div class="ic">📄</div><h3>Nota fiscal <span class="soon">em breve</span></h3><p>Emissão de NFC-e/NF-e integrada, direto da venda. Já incluído no plano.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head"><div class="kick">Simples de usar</div><h2>Comece em 3 passos</h2></div>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><h3>Crie sua conta</h3><p>Assine e crie a loja com seu nome e cores em 1 minuto.</p></div>
+      <div class="step"><div class="n">2</div><h3>Cadastre os produtos</h3><p>Adicione as peças com tamanho, cor, preço e quantidade.</p></div>
+      <div class="step"><div class="n">3</div><h3>Venda e acompanhe</h3><p>Registre as vendas e veja estoque, caixa e lucro em tempo real.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="price-sec">
+  <div class="wrap">
+    <div class="sec-head"><div class="kick">Plano único</div><h2>Tudo incluído</h2><p>Sem taxa por venda. Sem fidelidade. Cancele quando quiser.</p></div>
+    <div class="price-card">
+      <div class="plan">Plano Loja</div>
+      <div class="val">R$119<small>/mês</small></div>
+      <ul>
+        <li>Estoque por tamanho e cor, ilimitado</li>
+        <li>PDV (venda rápida) com baixa automática</li>
+        <li>Vendas, relatórios e lucro</li>
+        <li>Financeiro e controle de caixa</li>
+        <li>Acesso na nuvem, de qualquer aparelho</li>
+        <li>Nota fiscal (em breve, já incluída)</li>
+      </ul>
+      <a class="btn big" href="https://www.asaas.com/c/7punqudnyfkrcsmc">Assinar agora →</a>
+      <div class="fine">Pague por PIX, boleto ou cartão. Acesso liberado por e-mail assim que o pagamento é confirmado.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head"><div class="kick">Dúvidas</div><h2>Perguntas frequentes</h2></div>
+    <div class="faq">
+      <details><summary>Funciona no celular?</summary><p>Sim. É na nuvem e abre no celular, tablet ou computador — você acessa de onde estiver.</p></details>
+      <details><summary>Meus dados ficam salvos?</summary><p>Sim, tudo fica salvo no servidor com segurança e separado por loja. Se trocar de aparelho, é só entrar de novo.</p></details>
+      <details><summary>Consigo controlar tamanhos e cores?</summary><p>Sim! Cada tamanho/cor tem seu próprio estoque, com alerta quando está acabando.</p></details>
+      <details><summary>Tem emissão de nota fiscal?</summary><p>Está a caminho e já está incluída no plano. Assim que liberar, você emite direto da venda.</p></details>
+      <details><summary>Preciso de fidelidade?</summary><p>Não. É mensal, sem fidelidade — você cancela quando quiser.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap">
+    <h2>Organize sua loja hoje</h2>
+    <p>Pare de perder tempo com planilha e caderno. Tenha controle de verdade da sua loja.</p>
+    <a class="btn gold big" href="https://www.asaas.com/c/7punqudnyfkrcsmc">Assinar por R$119/mês →</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="logo">🛍️ JL LOJA</div>
+    <div>Dúvidas? <a class="wa" href="https://wa.me/5565993439523">WhatsApp (65) 99343-9523</a></div>
+    <div class="legal">JL Soluções Inteligentes Ltda · CNPJ 69.061.744/0001-12 · Várzea Grande/MT<br>© 2026 JL Loja — Sistema de gestão para lojas. Todos os direitos reservados.</div>
+  </div>
+</footer>
+</body>
+</html>

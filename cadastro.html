@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JL Loja — Criar conta</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg:#0d1117;--panel:#151b26;--panel2:#1b2330;--line:#252d3d;--ink:#eef2f8;--muted:#9aa6bd;--brand:#7c5cff;--brand2:#9d84ff;--red:#f2607a;--green:#3ecf8e}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:radial-gradient(900px 500px at 80% -10%,#241a45,transparent),var(--bg);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;width:100%;max-width:420px;padding:26px 24px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+  .logo{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:14px}
+  h1{font-size:22px;margin-bottom:4px}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:20px}
+  label{display:block;font-size:12.5px;color:var(--muted);margin:12px 0 5px;font-weight:600}
+  input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:12px 13px;border-radius:11px;font-size:15px;font-family:inherit}
+  input:focus{outline:none;border-color:var(--brand)}
+  .btn{width:100%;margin-top:18px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border:none;padding:14px;border-radius:12px;font-weight:800;font-size:15px;cursor:pointer}
+  .btn:disabled{opacity:.6;cursor:default}
+  .msg{margin-top:14px;font-size:13.5px;padding:10px 12px;border-radius:10px;display:none}
+  .msg.err{display:block;background:rgba(242,96,122,.12);color:#ffa8b9;border:1px solid rgba(242,96,122,.3)}
+  .msg.ok{display:block;background:rgba(62,207,142,.12);color:#8ff0c4;border:1px solid rgba(62,207,142,.3)}
+  .foot{margin-top:18px;text-align:center;font-size:13.5px;color:var(--muted)}
+  .foot a{color:var(--brand2);font-weight:700;text-decoration:none;cursor:pointer}
+  .tabs{display:flex;gap:8px;margin-bottom:18px}
+  .tabs button{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:10px;border-radius:10px;font-weight:800;cursor:pointer}
+  .tabs button.active{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">🛍️</div>
+  <div class="tabs">
+    <button id="tabCad" class="active" onclick="setMode('cad')">Criar conta</button>
+    <button id="tabLog" onclick="setMode('log')">Entrar</button>
+  </div>
+
+  <div id="cadForm">
+    <h1>Crie sua loja</h1>
+    <p class="sub">Comece a controlar estoque, vendas e financeiro em minutos.</p>
+    <label>Nome da loja *</label>
+    <input id="cNome" placeholder="Ex: Bella Moda">
+    <label>WhatsApp (recebe os pedidos)</label>
+    <input id="cZap" placeholder="(65) 99999-9999" inputmode="tel">
+    <label>Seu e-mail *</label>
+    <input id="cEmail" type="email" placeholder="voce@email.com" autocomplete="email">
+    <label>Senha * (mín. 6 caracteres)</label>
+    <input id="cSenha" type="password" placeholder="••••••" autocomplete="new-password">
+    <button class="btn" id="btnCad" onclick="criar()">Criar minha loja</button>
+  </div>
+
+  <div id="logForm" style="display:none">
+    <h1>Bem-vinda de volta</h1>
+    <p class="sub">Entre pra acessar o painel da sua loja.</p>
+    <label>E-mail</label>
+    <input id="lEmail" type="email" placeholder="voce@email.com" autocomplete="email">
+    <label>Senha</label>
+    <input id="lSenha" type="password" placeholder="••••••" autocomplete="current-password">
+    <button class="btn" id="btnLog" onclick="entrar()">Entrar</button>
+  </div>
+
+  <div class="msg" id="msg"></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+const SUPABASE_URL='https://xgazzkhpxkbjrtvdblag.supabase.co';
+const SUPABASE_ANON='sb_publishable_MffsIo5pQbuYeBZhzeg9hQ_23uZK5zP';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {auth:{storageKey:'jlloja-auth'}});
+const $=id=>document.getElementById(id);
+function msg(t,cls){const m=$('msg');m.textContent=t;m.className='msg '+cls;}
+function setMode(m){
+  $('cadForm').style.display=m==='cad'?'block':'none';
+  $('logForm').style.display=m==='log'?'block':'none';
+  $('tabCad').classList.toggle('active',m==='cad');
+  $('tabLog').classList.toggle('active',m==='log');
+  $('msg').className='msg';
+}
+function slugify(s){return (s||'loja').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'loja';}
+
+async function criar(){
+  const nome=$('cNome').value.trim();
+  const zap=$('cZap').value.trim();
+  const email=$('cEmail').value.trim();
+  const senha=$('cSenha').value;
+  if(!nome){msg('Informe o nome da loja.','err');return;}
+  if(!email||!email.includes('@')){msg('Informe um e-mail válido.','err');return;}
+  if(!senha||senha.length<6){msg('A senha precisa ter ao menos 6 caracteres.','err');return;}
+  $('btnCad').disabled=true;msg('Criando sua loja...','ok');
+  try{
+    const {data:au,error:e1}=await sb.auth.signUp({email,password:senha});
+    if(e1 && !/already/i.test(e1.message||'')){throw e1;}
+    let uid = au && au.user ? au.user.id : null;
+    if(!uid){
+      const {data:si,error:e2}=await sb.auth.signInWithPassword({email,password:senha});
+      if(e2) throw e2; uid=si.user.id;
+    }
+    // garante sessão
+    if(!(await sb.auth.getSession()).data.session){
+      const {error:e3}=await sb.auth.signInWithPassword({email,password:senha});
+      if(e3) throw e3;
+    }
+    const slug=slugify(nome)+'-'+Math.random().toString(36).slice(2,6);
+    const {error:e4}=await sb.from('loja_lojas').insert({slug,owner_id:uid,owner_email:email,nome,whatsapp:zap});
+    if(e4) throw e4;
+    msg('Loja criada! Entrando no painel...','ok');
+    setTimeout(()=>location.href='painel.html',700);
+  }catch(err){
+    msg('Erro: '+(err.message||err),'err');$('btnCad').disabled=false;
+  }
+}
+
+async function entrar(){
+  const email=$('lEmail').value.trim();const senha=$('lSenha').value;
+  if(!email||!senha){msg('Preencha e-mail e senha.','err');return;}
+  $('btnLog').disabled=true;msg('Entrando...','ok');
+  try{
+    const {error}=await sb.auth.signInWithPassword({email,password:senha});
+    if(error) throw error;
+    location.href='painel.html';
+  }catch(err){
+    msg('E-mail ou senha incorretos.','err');$('btnLog').disabled=false;
+  }
+}
+
+// se já estiver logado E tiver loja, vai direto pro painel; senão fica no cadastro
+(async()=>{
+  const {data}=await sb.auth.getSession();
+  if(data.session){
+    const {data:lojas}=await sb.from('loja_lojas').select('id').eq('owner_id',data.session.user.id).limit(1);
+    if(lojas&&lojas.length){location.href='painel.html';}
+    else{await sb.auth.signOut();}
+  }
+})();
+</script>
+</body>
+</html>
