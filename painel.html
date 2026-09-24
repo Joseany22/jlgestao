@@ -110,6 +110,7 @@
     <button data-tab="venda" onclick="setTab('venda')">🛒 Nova venda</button>
     <button data-tab="vendas" onclick="setTab('vendas')">🧾 Vendas</button>
     <button data-tab="financeiro" onclick="setTab('financeiro')">💰 Financeiro</button>
+    <button data-tab="fiscal" onclick="setTab('fiscal')">📄 Fiscal</button>
   </nav>
 
   <!-- PAINEL -->
@@ -208,6 +209,68 @@
     </div>
   </section>
 
+  <!-- FISCAL -->
+  <section id="tab-fiscal" class="hide">
+    <div class="panel">
+      <div style="background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;line-height:1.6">
+        📄 <b>Nota fiscal (NFC-e).</b> Preencha os dados fiscais da sua loja aqui. Enquanto o <b>ambiente</b> estiver em <b>Homologação (teste)</b>, as notas emitidas são <b>de teste, sem valor legal</b> — ideal pra experimentar. Pra emitir valendo, você troca pra <b>Produção</b> (precisa de certificado digital A1 e CSC reais).
+      </div>
+
+      <div class="field">
+        <label>Emissão de NFC-e</label>
+        <select id="fEmite"><option value="false">Desligada</option><option value="true">Ligada</option></select>
+      </div>
+      <div class="field">
+        <label>Ambiente</label>
+        <select id="fAmbiente"><option value="homologacao">Homologação (teste — sem valor legal)</option><option value="producao">Produção (nota válida)</option></select>
+      </div>
+
+      <h3 style="font-size:15px;margin:16px 0 8px">Dados da empresa (emitente)</h3>
+      <div class="grid2">
+        <div class="field"><label>CNPJ *</label><input id="fCnpj" placeholder="00.000.000/0000-00" inputmode="numeric"></div>
+        <div class="field"><label>Inscrição Estadual (IE) *</label><input id="fIe" placeholder="Só números"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Razão social *</label><input id="fRazao" placeholder="Nome da empresa no CNPJ"></div>
+        <div class="field"><label>Nome fantasia</label><input id="fFantasia" placeholder="Nome que aparece pro cliente"></div>
+      </div>
+      <div class="field">
+        <label>Regime tributário</label>
+        <select id="fCrt">
+          <option value="1">Simples Nacional</option>
+          <option value="2">Simples Nacional - excesso de sublimite</option>
+          <option value="3">Regime Normal (Lucro Presumido/Real)</option>
+        </select>
+      </div>
+
+      <h3 style="font-size:15px;margin:16px 0 8px">Endereço</h3>
+      <div class="grid3">
+        <div class="field"><label>CEP *</label><input id="fCep" placeholder="00000-000" inputmode="numeric"></div>
+        <div class="field" style="grid-column:span 2"><label>Logradouro (rua) *</label><input id="fLograd" placeholder="Ex: Av. Brasil"></div>
+      </div>
+      <div class="grid3">
+        <div class="field"><label>Número *</label><input id="fNumero" placeholder="123"></div>
+        <div class="field"><label>Complemento</label><input id="fCompl" placeholder="Sala, loja..."></div>
+        <div class="field"><label>Bairro *</label><input id="fBairro" placeholder="Centro"></div>
+      </div>
+      <div class="grid3">
+        <div class="field"><label>Município *</label><input id="fMunicipio" placeholder="Várzea Grande"></div>
+        <div class="field"><label>UF *</label><input id="fUf" placeholder="MT" maxlength="2"></div>
+        <div class="field"><label>Cód. IBGE do município</label><input id="fCodMun" placeholder="Ex: 5108402"></div>
+      </div>
+
+      <h3 style="font-size:15px;margin:16px 0 8px">Segurança da NFC-e (CSC)</h3>
+      <p class="muted" style="font-size:12.5px;margin-bottom:8px">O CSC e o Token você gera no portal da SEFAZ do seu estado. Necessário só pra <b>produção</b> (pode deixar em branco na homologação).</p>
+      <div class="grid2">
+        <div class="field"><label>CSC (código)</label><input id="fCsc" placeholder="Código de segurança do contribuinte"></div>
+        <div class="field"><label>ID do CSC (Token)</label><input id="fCscId" placeholder="Ex: 000001"></div>
+      </div>
+
+      <div class="err" id="fErr"></div>
+      <button class="btn primary" style="margin-top:6px" onclick="saveFiscal()">Salvar dados fiscais</button>
+    </div>
+  </section>
+
   <p class="footnote" id="foot">Dados salvos neste dispositivo • <span id="footBrand"></span> • Núcleo Fase 1</p>
 </div>
 
@@ -231,6 +294,15 @@
       <div class="grid2">
         <div class="field"><label>Estoque mínimo (alerta)</label><input id="pMin" type="number" step="1" min="0" placeholder="Ex: 2"></div>
         <div class="field"><label>Código / SKU (opcional)</label><input id="pSku" placeholder="Opcional"></div>
+      </div>
+      <div style="border-top:1px solid var(--line);margin:6px 0 12px;padding-top:12px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:2px">Dados fiscais <span class="muted" style="font-weight:400">(pra nota fiscal — opcional agora)</span></div>
+        <p class="muted" style="font-size:12px;margin-bottom:10px">Já vêm valores padrão pra loja de roupa. Ajuste se seu contador indicar.</p>
+        <div class="grid3">
+          <div class="field"><label>NCM</label><input id="pNcm" list="ncmList" placeholder="Ex: 6109.10.00"><datalist id="ncmList"><option value="6109.10.00">Camiseta de algodão</option><option value="6204.62.00">Calça feminina (algodão)</option><option value="6104.43.00">Vestido (fibras sintéticas)</option><option value="6205.20.00">Camisa masculina (algodão)</option><option value="6110.20.00">Blusa/malha (algodão)</option><option value="6403.99.00">Calçado</option></datalist></div>
+          <div class="field"><label>CFOP</label><input id="pCfop" value="5102" placeholder="5102"></div>
+          <div class="field"><label>CSOSN (Simples)</label><input id="pCsosn" value="102" placeholder="102"></div>
+        </div>
       </div>
       <div class="err" id="pErr"></div>
     </div>
@@ -746,7 +818,7 @@ async function fetchAll(){
     sb.from('loja_compras').select('*').eq('loja_id',LOJA_ID).order('data',{ascending:false}),
     sb.from('loja_despesas').select('*').eq('loja_id',LOJA_ID).order('data',{ascending:false})
   ]);
-  db.products=(prod||[]).map(r=>({id:r.id,nome:r.nome,categoria:r.categoria,tamanho:r.tamanho,cor:r.cor,custo:Number(r.custo)||0,preco:Number(r.preco)||0,estoque:Number(r.estoque)||0,minimo:Number(r.minimo)||0,sku:r.sku}));
+  db.products=(prod||[]).map(r=>({id:r.id,nome:r.nome,categoria:r.categoria,tamanho:r.tamanho,cor:r.cor,custo:Number(r.custo)||0,preco:Number(r.preco)||0,estoque:Number(r.estoque)||0,minimo:Number(r.minimo)||0,sku:r.sku,ncm:r.ncm,cfop:r.cfop,csosn:r.csosn}));
   db.sales=(vend||[]).map(r=>({id:r.id,data:r.criado_em,itens:r.itens||[],subtotal:Number(r.subtotal)||0,desconto:Number(r.desconto)||0,acrescimo:Number(r.acrescimo)||0,total:Number(r.total)||0,pagamento:r.forma_pag}));
   db.purchases=(comp||[]).map(r=>({id:r.id,data:r.data,produtoId:r.produto_id,produtoNome:r.produto_nome,tamanho:r.tamanho,cor:r.cor,qty:Number(r.qty)||0,custoUnit:Number(r.custo_unit)||0,total:Number(r.total)||0,obs:r.obs}));
   db.despesas=(desp||[]).map(r=>({id:r.id,data:r.data,descricao:r.descricao,categoria:r.categoria,valor:Number(r.valor)||0}));
@@ -783,7 +855,7 @@ async function saveProduct(){
   if(isNaN(preco)||preco<0){err.textContent='Informe um preço de venda válido.';return;}
   if(isNaN(est)||est<0){err.textContent='Informe a quantidade em estoque.';return;}
   const id=$('pId').value;
-  const rec={loja_id:LOJA_ID,nome,categoria:$('pCat').value.trim(),tamanho:$('pTam').value.trim(),cor:$('pCor').value.trim(),custo:parseFloat($('pCusto').value)||0,preco,estoque:est,minimo:parseInt($('pMin').value)||0,sku:$('pSku').value.trim()};
+  const rec={loja_id:LOJA_ID,nome,categoria:$('pCat').value.trim(),tamanho:$('pTam').value.trim(),cor:$('pCor').value.trim(),custo:parseFloat($('pCusto').value)||0,preco,estoque:est,minimo:parseInt($('pMin').value)||0,sku:$('pSku').value.trim(),ncm:$('pNcm').value.trim(),cfop:$('pCfop').value.trim(),csosn:$('pCsosn').value.trim()};
   err.textContent='Salvando...';
   let e;
   if(id){({error:e}=await sb.from('loja_produtos').update(rec).eq('id',id));}
@@ -861,6 +933,62 @@ async function saveSettings(){
   db.brand={name:nome,sub:sub||'Controle de estoque, vendas e financeiro',color};
   applyBrand();closeModal('setOverlay');injectHeader();renderPainel();
 }
+
+/* ====== aba fiscal ====== */
+function setTab(t){
+  ['painel','estoque','venda','vendas','financeiro','fiscal'].forEach(x=>{const el=$('tab-'+x);if(el)el.classList.toggle('hide',x!==t);});
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  if(t==='painel')renderPainel();
+  if(t==='estoque')renderEstoque();
+  if(t==='venda'){renderPdvBusca();renderCart();}
+  if(t==='vendas')renderVendas();
+  if(t==='financeiro')renderFinanceiro();
+  if(t==='fiscal')renderFiscal();
+}
+function renderFiscal(){
+  if(!LOJA)return;
+  const set=(id,v)=>{const el=$(id);if(el)el.value=(v==null?'':v);};
+  set('fEmite', LOJA.emite_nfce?'true':'false');
+  set('fAmbiente', LOJA.nfe_ambiente||'homologacao');
+  set('fCnpj', LOJA.cnpj); set('fIe', LOJA.ie);
+  set('fRazao', LOJA.razao_social); set('fFantasia', LOJA.nome_fantasia||LOJA.nome);
+  set('fCrt', LOJA.crt||'1');
+  set('fCep', LOJA.cep); set('fLograd', LOJA.logradouro); set('fNumero', LOJA.numero);
+  set('fCompl', LOJA.complemento); set('fBairro', LOJA.bairro);
+  set('fMunicipio', LOJA.municipio); set('fUf', LOJA.uf); set('fCodMun', LOJA.cod_municipio);
+  set('fCsc', LOJA.csc); set('fCscId', LOJA.csc_id);
+}
+async function saveFiscal(){
+  const err=$('fErr');err.textContent='';
+  const v=id=>($(id)?$(id).value.trim():'');
+  const rec={
+    emite_nfce: v('fEmite')==='true',
+    nfe_ambiente: v('fAmbiente')||'homologacao',
+    cnpj:v('fCnpj'), ie:v('fIe'), razao_social:v('fRazao'), nome_fantasia:v('fFantasia'),
+    crt:v('fCrt'), cep:v('fCep'), logradouro:v('fLograd'), numero:v('fNumero'),
+    complemento:v('fCompl'), bairro:v('fBairro'), municipio:v('fMunicipio'),
+    uf:(v('fUf')||'').toUpperCase(), cod_municipio:v('fCodMun'), csc:v('fCsc'), csc_id:v('fCscId')
+  };
+  if(rec.emite_nfce){
+    if(!rec.cnpj||!rec.razao_social||!rec.ie){err.textContent='Pra ligar a emissão, preencha ao menos CNPJ, Razão social e IE.';return;}
+  }
+  err.textContent='Salvando...';
+  const {error}=await sb.from('loja_lojas').update(rec).eq('id',LOJA_ID);
+  if(error){err.textContent='Erro: '+error.message;return;}
+  Object.assign(LOJA, rec);
+  err.style.color='var(--green)';err.textContent='✓ Dados fiscais salvos!';
+  setTimeout(()=>{err.textContent='';err.style.color='';},3000);
+}
+
+/* preenche campos fiscais do produto (mantém o resto do openProduct original) */
+const _openProductBase = openProduct;
+openProduct = function(id){
+  _openProductBase(id);
+  const p = id?db.products.find(x=>x.id===id):null;
+  $('pNcm').value = p?(p.ncm||''):'';
+  $('pCfop').value = p?(p.cfop||'5102'):'5102';
+  $('pCsosn').value = p?(p.csosn||'102'):'102';
+};
 
 /* inicia na nuvem */
 loadCloud();
