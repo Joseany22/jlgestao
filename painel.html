@@ -160,9 +160,23 @@
           <div class="field"><label>Juros / acréscimo (%)</label><input id="pdvAcrPct" type="number" step="0.01" min="0" value="0" oninput="renderCart()"></div>
           <div class="field"><label>Acréscimo (R$)</label><input id="pdvAcr" type="number" step="0.01" min="0" value="0" oninput="renderCart()"></div>
         </div>
+        <div class="field" style="border-top:1px solid var(--line);padding-top:12px;margin-top:2px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink);font-size:14px;font-weight:700">
+            <input type="checkbox" id="pdvEntrega" style="width:auto" onchange="toggleEntregaPdv()"> 🛵 É entrega?
+          </label>
+        </div>
+        <div id="entregaFields" class="hide">
+          <div class="grid2">
+            <div class="field"><label>Cliente</label><input id="pdvEntCliente" placeholder="Nome do cliente"></div>
+            <div class="field"><label>Telefone / WhatsApp</label><input id="pdvEntFone" placeholder="(65) 9..." inputmode="tel"></div>
+          </div>
+          <div class="field"><label>Endereço de entrega</label><input id="pdvEntEndereco" placeholder="Rua, nº, bairro, ponto de referência"></div>
+          <div class="field"><label>Taxa de entrega (R$)</label><input id="pdvEntTaxa" type="number" step="0.01" min="0" value="0" oninput="renderCart()"></div>
+        </div>
         <div class="totline"><span class="muted">Subtotal</span><span id="pdvSub">R$ 0,00</span></div>
         <div class="totline"><span class="muted">Desconto</span><span id="pdvDescShow">R$ 0,00</span></div>
         <div class="totline"><span class="muted">Acréscimo / juros</span><span id="pdvAcrShow">R$ 0,00</span></div>
+        <div class="totline" id="pdvTaxaLine" style="display:none"><span class="muted">🛵 Taxa de entrega</span><span id="pdvTaxaShow">R$ 0,00</span></div>
         <div class="totline big"><span>Total</span><span id="pdvTot">R$ 0,00</span></div>
         <div class="err" id="pdvErr"></div>
         <button class="btn primary" style="width:100%;justify-content:center;margin-top:8px" onclick="finalizarVenda()">✅ Finalizar venda</button>
@@ -590,7 +604,15 @@ function renderCart(){
   $('pdvSub').textContent=money(t.sub);
   $('pdvDescShow').textContent='- '+money(t.desconto);
   $('pdvAcrShow').textContent='+ '+money(t.acrescimo);
+  const entOn=$('pdvEntrega')&&$('pdvEntrega').checked;
+  if($('pdvTaxaLine'))$('pdvTaxaLine').style.display=entOn?'':'none';
+  if($('pdvTaxaShow'))$('pdvTaxaShow').textContent='+ '+money(t.taxa);
   $('pdvTot').textContent=money(t.tot);
+}
+function toggleEntregaPdv(){
+  const on=$('pdvEntrega')&&$('pdvEntrega').checked;
+  if($('entregaFields'))$('entregaFields').classList.toggle('hide',!on);
+  renderCart();
 }
 // desconto e acréscimo aceitam % e R$; o juros (%) incide sobre o valor já com desconto
 function calcTotais(){
@@ -602,10 +624,17 @@ function calcTotais(){
   const acrPct=parseFloat($('pdvAcrPct').value)||0;
   const acrFixo=parseFloat($('pdvAcr').value)||0;
   const acrescimo=base*(acrPct/100)+acrFixo;
-  const tot=Math.max(0,base+acrescimo);
-  return {sub,descPct,descFixo,desconto,base,acrPct,acrFixo,acrescimo,tot};
+  const ent=$('pdvEntrega')&&$('pdvEntrega').checked;
+  const taxa=ent?(parseFloat($('pdvEntTaxa').value)||0):0;
+  const tot=Math.max(0,base+acrescimo+taxa);
+  return {sub,descPct,descFixo,desconto,base,acrPct,acrFixo,acrescimo,taxa,tot};
 }
-function limparCarrinho(){cart=[];$('pdvDesc').value='0';$('pdvDescPct').value='0';$('pdvAcr').value='0';$('pdvAcrPct').value='0';renderCart();renderPdvBusca();$('pdvErr').textContent='';}
+function limparCarrinho(){cart=[];$('pdvDesc').value='0';$('pdvDescPct').value='0';$('pdvAcr').value='0';$('pdvAcrPct').value='0';
+  if($('pdvEntrega')){$('pdvEntrega').checked=false;}
+  ['pdvEntCliente','pdvEntFone','pdvEntEndereco'].forEach(id=>{if($(id))$(id).value='';});
+  if($('pdvEntTaxa'))$('pdvEntTaxa').value='0';
+  if($('entregaFields'))$('entregaFields').classList.add('hide');
+  renderCart();renderPdvBusca();$('pdvErr').textContent='';}
 function flashErr(m){const e=$('pdvErr');e.textContent=m;setTimeout(()=>{if(e.textContent===m)e.textContent='';},2500);}
 function finalizarVenda(){
   const e=$('pdvErr');e.textContent='';
@@ -819,7 +848,8 @@ async function fetchAll(){
     sb.from('loja_despesas').select('*').eq('loja_id',LOJA_ID).order('data',{ascending:false})
   ]);
   db.products=(prod||[]).map(r=>({id:r.id,nome:r.nome,categoria:r.categoria,tamanho:r.tamanho,cor:r.cor,custo:Number(r.custo)||0,preco:Number(r.preco)||0,estoque:Number(r.estoque)||0,minimo:Number(r.minimo)||0,sku:r.sku,ncm:r.ncm,cfop:r.cfop,csosn:r.csosn}));
-  db.sales=(vend||[]).map(r=>({id:r.id,data:r.criado_em,itens:r.itens||[],subtotal:Number(r.subtotal)||0,desconto:Number(r.desconto)||0,acrescimo:Number(r.acrescimo)||0,total:Number(r.total)||0,pagamento:r.forma_pag}));
+  db.sales=(vend||[]).map(r=>({id:r.id,data:r.criado_em,itens:r.itens||[],subtotal:Number(r.subtotal)||0,desconto:Number(r.desconto)||0,acrescimo:Number(r.acrescimo)||0,total:Number(r.total)||0,pagamento:r.forma_pag,
+    entrega:r.entrega===true,entregaStatus:r.entrega_status,entregaTaxa:Number(r.entrega_taxa)||0,entregaCliente:r.entrega_cliente,entregaFone:r.entrega_fone,entregaEndereco:r.entrega_endereco}));
   db.purchases=(comp||[]).map(r=>({id:r.id,data:r.data,produtoId:r.produto_id,produtoNome:r.produto_nome,tamanho:r.tamanho,cor:r.cor,qty:Number(r.qty)||0,custoUnit:Number(r.custo_unit)||0,total:Number(r.total)||0,obs:r.obs}));
   db.despesas=(desp||[]).map(r=>({id:r.id,data:r.data,descricao:r.descricao,categoria:r.categoria,valor:Number(r.valor)||0}));
 }
@@ -858,7 +888,7 @@ async function loadCloud(){
   }
   if(!lojaRow){await sb.auth.signOut();location.href='cadastro.html';return;}
   LOJA=lojaRow;LOJA_ID=LOJA.id;
-  if(PAPEL==='dono')PERMS={painel:true,estoque:true,venda:true,vendas:true,financeiro:true};
+  if(PAPEL==='dono')PERMS={painel:true,estoque:true,venda:true,vendas:true,entregas:true,financeiro:true};
   if(LOJA.ativo===false){ mostrarBloqueio(); return; }
   db.brand={name:LOJA.nome||'Minha Loja',sub:LOJA.segmento||'Controle de estoque, vendas e financeiro',color:LOJA.cor||'#7c5cff'};
   await fetchAll();
@@ -892,9 +922,13 @@ async function finalizarVenda(){
   const e=$('pdvErr');e.textContent='';
   if(!cart.length){e.textContent='Adicione ao menos um produto.';return;}
   for(const c of cart){const p=db.products.find(x=>x.id===c.id);if(!p||(Number(p.estoque)||0)<c.qty){e.textContent='Estoque insuficiente de '+c.nome;return;}}
+  const ent=$('pdvEntrega')&&$('pdvEntrega').checked;
+  if(ent && !($('pdvEntEndereco').value||'').trim()){e.textContent='Informe o endereço de entrega.';return;}
   const t=calcTotais();e.textContent='Registrando...';
   for(const c of cart){const p=db.products.find(x=>x.id===c.id);const novo=(Number(p.estoque)||0)-c.qty;const {error:eu}=await sb.from('loja_produtos').update({estoque:novo}).eq('id',c.id);if(eu){e.textContent='Erro ao baixar estoque: '+eu.message;await fetchAll();return;}}
-  const venda={loja_id:LOJA_ID,itens:cart.map(c=>({id:c.id,nome:c.nome,tamanho:c.tamanho,cor:c.cor,qty:c.qty,preco:c.preco,custo:c.custo})),subtotal:t.sub,desconto:t.desconto,acrescimo:t.acrescimo,total:t.tot,forma_pag:$('pdvPag').value};
+  const venda={loja_id:LOJA_ID,itens:cart.map(c=>({id:c.id,nome:c.nome,tamanho:c.tamanho,cor:c.cor,qty:c.qty,preco:c.preco,custo:c.custo})),subtotal:t.sub,desconto:t.desconto,acrescimo:t.acrescimo,total:t.tot,forma_pag:$('pdvPag').value,
+    entrega:ent, entrega_status: ent?'pendente':null, entrega_taxa: ent?(parseFloat($('pdvEntTaxa').value)||0):0,
+    entrega_cliente: ent?($('pdvEntCliente').value||'').trim():null, entrega_fone: ent?($('pdvEntFone').value||'').trim():null, entrega_endereco: ent?($('pdvEntEndereco').value||'').trim():null};
   const {error:ev}=await sb.from('loja_vendas').insert(venda);
   if(ev){e.textContent='Erro ao salvar venda: '+ev.message;await fetchAll();return;}
   const n=cart.reduce((a,c)=>a+c.qty,0);const tot=t.tot,pag=venda.forma_pag;
@@ -954,12 +988,13 @@ async function saveSettings(){
 
 /* ====== aba fiscal ====== */
 function setTab(t){
-  ['painel','estoque','venda','vendas','financeiro','fiscal','usuarios'].forEach(x=>{const el=$('tab-'+x);if(el)el.classList.toggle('hide',x!==t);});
+  ['painel','estoque','venda','vendas','entregas','financeiro','fiscal','usuarios'].forEach(x=>{const el=$('tab-'+x);if(el)el.classList.toggle('hide',x!==t);});
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
   if(t==='painel')renderPainel();
   if(t==='estoque')renderEstoque();
   if(t==='venda'){renderPdvBusca();renderCart();}
   if(t==='vendas')renderVendas();
+  if(t==='entregas')renderEntregas();
   if(t==='financeiro')renderFinanceiro();
   if(t==='fiscal')renderFiscal();
   if(t==='usuarios')renderEquipe();
@@ -1010,7 +1045,7 @@ openProduct = function(id){
 };
 
 /* ====== MULTIUSUÁRIO: permissões + equipe ====== */
-const MODS=[['painel','📊 Painel (faturamento/lucro)'],['estoque','📦 Estoque'],['venda','🛒 Nova venda (PDV)'],['vendas','🧾 Vendas (histórico)'],['financeiro','💰 Financeiro']];
+const MODS=[['painel','📊 Painel (faturamento/lucro)'],['estoque','📦 Estoque'],['venda','🛒 Nova venda (PDV)'],['vendas','🧾 Vendas (histórico)'],['entregas','🛵 Entregas'],['financeiro','💰 Financeiro']];
 function ehDono(){return PAPEL==='dono';}
 
 function injectEquipeStyles(){
@@ -1039,12 +1074,25 @@ function permChecksHTML(prefix, sel){
 
 function applyPerms(){
   injectEquipeStyles();
+  // injeta a aba Entregas (uma vez) — visibilidade controlada pela permissão
+  if(!document.querySelector('#tabs button[data-tab="entregas"]')){
+    var navE=document.getElementById('tabs');
+    var be=document.createElement('button');be.dataset.tab='entregas';be.textContent='🛵 Entregas';be.onclick=function(){setTab('entregas');};
+    var after=document.querySelector('#tabs button[data-tab="vendas"]');
+    if(after&&after.nextSibling)navE.insertBefore(be,after.nextSibling); else navE.appendChild(be);
+    var secE=document.createElement('section');secE.id='tab-entregas';secE.className='hide';
+    secE.innerHTML='<div class="panel"><div class="toolbar"><h3 style="font-size:15px;flex:1;margin:0">🛵 Entregas</h3>'+
+      '<select id="entFiltro" onchange="renderEntregas()" style="max-width:220px"><option value="ativas">Pendentes + saiu p/ entrega</option><option value="pendente">Só pendentes</option><option value="saiu">Só saiu p/ entrega</option><option value="entregue">Entregues</option><option value="todas">Todas</option></select>'+
+      '</div><div id="entregasList"></div></div>';
+    var hostE=document.getElementById('tab-painel');
+    if(hostE&&hostE.parentNode)hostE.parentNode.appendChild(secE);
+  }
   // Abas por permissão
   document.querySelectorAll('#tabs button[data-tab]').forEach(function(b){
     var t=b.dataset.tab;
     if(t==='fiscal'){b.style.display=ehDono()?'':'none';return;}
     if(t==='usuarios'){return;}
-    if(['painel','estoque','venda','vendas','financeiro'].indexOf(t)>=0){b.style.display=PERMS[t]?'':'none';}
+    if(['painel','estoque','venda','vendas','entregas','financeiro'].indexOf(t)>=0){b.style.display=PERMS[t]?'':'none';}
   });
   // Botões do topo (Personalizar/Exportar) só pro dono
   document.querySelectorAll('header.top button').forEach(function(b){
@@ -1068,7 +1116,7 @@ function applyPerms(){
         '<div class="equigrid">'+
           '<div><label>Nome</label><input id="fuNome" placeholder="Ex: Maria"></div>'+
           '<div><label>E-mail (login)</label><input id="fuEmail" type="email" placeholder="maria@email.com"></div>'+
-          '<div><label>Senha (mín. 6)</label><input id="fuSenha" type="password" placeholder="••••••"></div>'+
+          '<div><label>Senha (mín. 6)</label><div style="position:relative"><input id="fuSenha" type="password" placeholder="••••••" style="padding-right:42px"><button type="button" onclick="togglePw(\'fuSenha\',this)" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;width:auto">👁️</button></div></div>'+
         '</div>'+
         '<div style="margin:14px 0 4px"><span class="muted" style="font-size:12.5px;font-weight:700">Pode acessar:</span>'+
           '<div class="permrow" id="fuPerms"></div>'+
@@ -1080,7 +1128,7 @@ function applyPerms(){
     if(host&&host.parentNode)host.parentNode.appendChild(sec);
   }
   // Primeira aba visível
-  var order=['painel','estoque','venda','vendas','financeiro'];
+  var order=['painel','estoque','venda','vendas','entregas','financeiro'];
   var first=ehDono()?'painel':order.find(function(t){return PERMS[t];});
   if(!ehDono() && !first){
     var w=document.querySelector('.wrap');
@@ -1168,6 +1216,45 @@ async function addFuncionario(){
   msg.style.color='var(--green)';msg.textContent='✓ Funcionário criado! Passe o e-mail e a senha pra ele acessar em '+location.origin+'/cadastro.html';
   renderEquipe();
 }
+
+/* ====== ENTREGAS ====== */
+function entregaStatusChip(st){
+  if(st==='entregue')return '<span class="eqbadge" style="background:rgba(62,207,142,.15);color:var(--green)">✓ Entregue</span>';
+  if(st==='saiu')return '<span class="eqbadge" style="background:rgba(245,181,69,.15);color:var(--amber)">🛵 Saiu p/ entrega</span>';
+  return '<span class="eqbadge" style="background:rgba(242,96,122,.15);color:var(--red)">⏳ Pendente</span>';
+}
+function renderEntregas(){
+  const box=$('entregasList'); if(!box)return;
+  const f=($('entFiltro')&&$('entFiltro').value)||'ativas';
+  let list=(db.sales||[]).filter(s=>s.entrega);
+  if(f==='ativas')list=list.filter(s=>s.entregaStatus!=='entregue');
+  else if(f!=='todas')list=list.filter(s=>s.entregaStatus===f);
+  list=list.slice().sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+  if(!list.length){box.innerHTML='<p class="muted" style="padding:6px">Nenhuma entrega nesse filtro.</p>';return;}
+  box.innerHTML=list.map(function(s){
+    const itens=(s.itens||[]).map(i=>i.qty+'x '+esc(i.nome)).join(', ');
+    let acts='';
+    if(s.entregaStatus==='pendente')acts='<button class="btn sm primary" onclick="setEntregaStatus(\''+s.id+'\',\'saiu\')">Saiu p/ entrega</button>';
+    else if(s.entregaStatus==='saiu')acts='<button class="btn sm primary" onclick="setEntregaStatus(\''+s.id+'\',\'entregue\')">Marcar entregue</button>';
+    if(s.entregaStatus&&s.entregaStatus!=='pendente')acts+=' <button class="btn sm" onclick="setEntregaStatus(\''+s.id+'\',\'pendente\')">Voltar p/ pendente</button>';
+    return '<div class="eqcard"><div class="eqhead">'+
+      '<span class="nm">'+esc(s.entregaCliente||'Cliente')+'</span>'+
+      (s.entregaFone?'<span class="em">'+esc(s.entregaFone)+'</span>':'')+
+      entregaStatusChip(s.entregaStatus)+
+      '<span style="margin-left:auto;font-weight:800">'+money(s.total)+'</span></div>'+
+      '<div class="muted" style="font-size:13px;margin-bottom:4px">📍 '+esc(s.entregaEndereco||'—')+'</div>'+
+      '<div class="muted" style="font-size:12.5px;margin-bottom:6px">'+esc(itens)+' · taxa '+money(s.entregaTaxa)+' · '+esc(s.pagamento||'')+' · '+esc((s.data||'').slice(0,10))+'</div>'+
+      '<div class="eqacts">'+acts+'</div></div>';
+  }).join('');
+}
+async function setEntregaStatus(id,st){
+  const {error}=await sb.from('loja_vendas').update({entrega_status:st}).eq('id',id);
+  if(error){toastOk('❌ Erro: '+error.message);return;}
+  const s=(db.sales||[]).find(x=>x.id===id); if(s)s.entregaStatus=st;
+  renderEntregas();
+  toastOk('✅ '+(st==='saiu'?'Saiu para entrega':st==='entregue'?'Marcada como entregue':'Voltou para pendente'));
+}
+function togglePw(id,btn){var el=$(id);if(!el)return;if(el.type==='password'){el.type='text';btn.textContent='🙈';}else{el.type='password';btn.textContent='👁️';}}
 
 /* inicia na nuvem */
 loadCloud();

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JL Gestão — Redefinir senha</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg:#0d1117;--panel:#151b26;--panel2:#1b2330;--line:#252d3d;--ink:#eef2f8;--muted:#9aa6bd;--brand:#7c5cff;--brand2:#9d84ff;--red:#f2607a;--green:#3ecf8e}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:radial-gradient(900px 500px at 80% -10%,#241a45,transparent),var(--bg);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;width:100%;max-width:420px;padding:26px 24px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+  .logo{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:14px}
+  h1{font-size:22px;margin-bottom:4px}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:20px}
+  label{display:block;font-size:12.5px;color:var(--muted);margin:12px 0 5px;font-weight:600}
+  input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:12px 13px;border-radius:11px;font-size:15px;font-family:inherit}
+  input:focus{outline:none;border-color:var(--brand)}
+  .btn{width:100%;margin-top:18px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border:none;padding:14px;border-radius:12px;font-weight:800;font-size:15px;cursor:pointer}
+  .btn:disabled{opacity:.6;cursor:default}
+  .msg{margin-top:14px;font-size:13.5px;padding:10px 12px;border-radius:10px;display:none}
+  .msg.err{display:block;background:rgba(242,96,122,.12);color:#ffa8b9;border:1px solid rgba(242,96,122,.3)}
+  .msg.ok{display:block;background:rgba(62,207,142,.12);color:#8ff0c4;border:1px solid rgba(62,207,142,.3)}
+  .foot{margin-top:18px;text-align:center;font-size:13.5px;color:var(--muted)}
+  .foot a{color:var(--brand2);font-weight:700;text-decoration:none;cursor:pointer}
+  .eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;width:auto}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">🔑</div>
+
+  <div id="formBox" style="display:none">
+    <h1>Criar nova senha</h1>
+    <p class="sub">Digite a nova senha da sua conta.</p>
+    <label>Nova senha (mín. 6 caracteres)</label>
+    <div style="position:relative">
+      <input id="s1" type="password" placeholder="••••••" autocomplete="new-password" style="padding-right:44px">
+      <button type="button" class="eye" onclick="togglePw('s1',this)">👁️</button>
+    </div>
+    <label>Confirmar nova senha</label>
+    <div style="position:relative">
+      <input id="s2" type="password" placeholder="••••••" autocomplete="new-password" style="padding-right:44px">
+      <button type="button" class="eye" onclick="togglePw('s2',this)">👁️</button>
+    </div>
+    <button class="btn" id="btnSalvar" onclick="salvar()">Salvar nova senha</button>
+  </div>
+
+  <div id="invalidBox" style="display:none">
+    <h1>Link inválido ou expirado</h1>
+    <p class="sub">Esse link de redefinição não é mais válido. Volte e peça um novo em "Esqueci minha senha".</p>
+    <a class="btn" href="cadastro.html" style="display:block;text-align:center;text-decoration:none">Voltar pro acesso</a>
+  </div>
+
+  <div id="loadingBox">
+    <h1>Verificando link...</h1>
+    <p class="sub">Só um instante.</p>
+  </div>
+
+  <div class="msg" id="msg"></div>
+  <div class="foot"><a href="cadastro.html">Voltar pro acesso</a></div>
+</div>
+
+<script>
+const SUPABASE_URL='https://xgazzkhpxkbjrtvdblag.supabase.co';
+const SUPABASE_ANON='sb_publishable_MffsIo5pQbuYeBZhzeg9hQ_23uZK5zP';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {auth:{storageKey:'jlloja-auth',detectSessionInUrl:true,flowType:'implicit'}});
+const $=id=>document.getElementById(id);
+function msg(t,cls){const m=$('msg');m.textContent=t;m.className='msg '+cls;}
+function togglePw(id,btn){const el=$(id);if(!el)return;if(el.type==='password'){el.type='text';btn.textContent='🙈';}else{el.type='password';btn.textContent='👁️';}}
+function show(box){['formBox','invalidBox','loadingBox'].forEach(b=>{$(b).style.display=(b===box?'block':'none');});}
+
+let pronto=false;
+sb.auth.onAuthStateChange((event)=>{
+  if(event==='PASSWORD_RECOVERY'){pronto=true;show('formBox');}
+});
+
+async function salvar(){
+  const a=$('s1').value, b=$('s2').value;
+  if(!a||a.length<6){msg('A senha precisa ter ao menos 6 caracteres.','err');return;}
+  if(a!==b){msg('As duas senhas não são iguais.','err');return;}
+  $('btnSalvar').disabled=true;msg('Salvando...','ok');
+  const {error}=await sb.auth.updateUser({password:a});
+  if(error){msg('Erro: '+error.message,'err');$('btnSalvar').disabled=false;return;}
+  msg('Senha alterada! Entrando no painel...','ok');
+  setTimeout(()=>location.href='painel.html',1200);
+}
+
+// Na carga, o supabase-js lê o token de recuperação da URL. Damos um tempo e conferimos a sessão.
+(async()=>{
+  await new Promise(r=>setTimeout(r,900));
+  if(pronto)return;
+  const {data}=await sb.auth.getSession();
+  if(data.session){show('formBox');}
+  else{show('invalidBox');}
+})();
+</script>
+</body>
+</html>
