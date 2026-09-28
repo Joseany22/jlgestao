@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JL Loja — Controle de Roupas</title>
+<title>JL Gestão — Painel</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
@@ -794,7 +794,7 @@ setTab('painel');
 const SUPABASE_URL='https://xgazzkhpxkbjrtvdblag.supabase.co';
 const SUPABASE_ANON='sb_publishable_MffsIo5pQbuYeBZhzeg9hQ_23uZK5zP';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {auth:{storageKey:'jlloja-auth'}});
-let LOJA_ID=null, LOJA=null;
+let LOJA_ID=null, LOJA=null, PERMS={}, PAPEL='dono', MEU_UID=null, MEU_EMAIL='';
 const LOJA_PAG_URL='https://www.asaas.com/c/7punqudnyfkrcsmc'; // link de assinatura (preenchido no deploy)
 
 function save(){/* no-op: agora salvamos direto na nuvem */}
@@ -805,7 +805,7 @@ function mostrarBloqueio(){
    '<div style="font-size:40px">🔒</div>'+
    '<h1 style="font-size:22px;margin:10px 0 6px">Assinatura pendente</h1>'+
    '<p style="color:#9aa6bd;font-size:15px;line-height:1.6">Seu acesso está pausado porque a mensalidade está em aberto. Assim que o pagamento for confirmado, seu painel volta sozinho. 💜</p>'+
-   '<a href="'+LOJA_PAG_URL+'" target="_blank" style="display:block;margin-top:20px;background:linear-gradient(135deg,#7c5cff,#9d84ff);color:#fff;text-decoration:none;font-weight:800;padding:14px;border-radius:12px">Regularizar assinatura (R$119/mês)</a>'+
+   '<a href="'+LOJA_PAG_URL+'" target="_blank" style="display:block;margin-top:20px;background:linear-gradient(135deg,#7c5cff,#9d84ff);color:#fff;text-decoration:none;font-weight:800;padding:14px;border-radius:12px">Regularizar assinatura (R$89/mês)</a>'+
    '<p style="margin-top:14px;font-size:13px;color:#9aa6bd">Dúvidas? <a href="https://wa.me/5565993439523" style="color:#9d84ff;font-weight:700">WhatsApp (65) 99343-9523</a></p>'+
    '<a onclick="sair()" style="display:inline-block;margin-top:16px;color:#9aa6bd;font-size:13px;cursor:pointer">Sair</a>'+
    '</div></div>';
@@ -836,15 +836,33 @@ async function sair(){await sb.auth.signOut();location.href='cadastro.html';}
 async function loadCloud(){
   const {data:sess}=await sb.auth.getSession();
   if(!sess.session){location.href='cadastro.html';return;}
-  const uid=sess.session.user.id;
-  const {data:lojas,error}=await sb.from('loja_lojas').select('*').eq('owner_id',uid).limit(1);
-  if(error){alert('Erro ao carregar sua loja: '+error.message);return;}
-  if(!lojas||!lojas.length){await sb.auth.signOut();location.href='cadastro.html';return;}
-  LOJA=lojas[0];LOJA_ID=LOJA.id;
+  const uid=sess.session.user.id; MEU_UID=uid; MEU_EMAIL=sess.session.user.email||'';
+  // Resolve a loja pelo vínculo de membro (dono ou funcionário)
+  let membro=null;
+  try{
+    const {data:mems}=await sb.from('loja_membros').select('*').eq('user_id',uid).eq('ativo',true).limit(1);
+    if(mems&&mems.length)membro=mems[0];
+  }catch(_){}
+  let lojaRow=null;
+  if(membro){
+    PAPEL=membro.papel||'funcionario';
+    PERMS=membro.permissoes||{};
+    const {data:lj}=await sb.from('loja_lojas').select('*').eq('id',membro.loja_id).limit(1);
+    lojaRow=lj&&lj[0];
+  }else{
+    // Fallback: dono antigo ainda sem registro de membro
+    const {data:lojas,error}=await sb.from('loja_lojas').select('*').eq('owner_id',uid).limit(1);
+    if(error){alert('Erro ao carregar sua loja: '+error.message);return;}
+    lojaRow=lojas&&lojas[0];
+    PAPEL='dono';
+  }
+  if(!lojaRow){await sb.auth.signOut();location.href='cadastro.html';return;}
+  LOJA=lojaRow;LOJA_ID=LOJA.id;
+  if(PAPEL==='dono')PERMS={painel:true,estoque:true,venda:true,vendas:true,financeiro:true};
   if(LOJA.ativo===false){ mostrarBloqueio(); return; }
   db.brand={name:LOJA.nome||'Minha Loja',sub:LOJA.segmento||'Controle de estoque, vendas e financeiro',color:LOJA.cor||'#7c5cff'};
   await fetchAll();
-  applyBrand(); injectHeader(); setTab('painel');
+  applyBrand(); injectHeader(); applyPerms();
 }
 
 /* ====== mutações -> nuvem ====== */
@@ -936,7 +954,7 @@ async function saveSettings(){
 
 /* ====== aba fiscal ====== */
 function setTab(t){
-  ['painel','estoque','venda','vendas','financeiro','fiscal'].forEach(x=>{const el=$('tab-'+x);if(el)el.classList.toggle('hide',x!==t);});
+  ['painel','estoque','venda','vendas','financeiro','fiscal','usuarios'].forEach(x=>{const el=$('tab-'+x);if(el)el.classList.toggle('hide',x!==t);});
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
   if(t==='painel')renderPainel();
   if(t==='estoque')renderEstoque();
@@ -944,6 +962,7 @@ function setTab(t){
   if(t==='vendas')renderVendas();
   if(t==='financeiro')renderFinanceiro();
   if(t==='fiscal')renderFiscal();
+  if(t==='usuarios')renderEquipe();
 }
 function renderFiscal(){
   if(!LOJA)return;
@@ -989,6 +1008,166 @@ openProduct = function(id){
   $('pCfop').value = p?(p.cfop||'5102'):'5102';
   $('pCsosn').value = p?(p.csosn||'102'):'102';
 };
+
+/* ====== MULTIUSUÁRIO: permissões + equipe ====== */
+const MODS=[['painel','📊 Painel (faturamento/lucro)'],['estoque','📦 Estoque'],['venda','🛒 Nova venda (PDV)'],['vendas','🧾 Vendas (histórico)'],['financeiro','💰 Financeiro']];
+function ehDono(){return PAPEL==='dono';}
+
+function injectEquipeStyles(){
+  if(document.getElementById('equipeCss'))return;
+  const s=document.createElement('style');s.id='equipeCss';
+  s.textContent='.permrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}'+
+    '.permchk{display:flex;align-items:center;gap:7px;font-size:13px;background:var(--panel2);border:1px solid var(--line);padding:7px 11px;border-radius:9px;cursor:pointer;color:var(--ink)}'+
+    '.permchk input{width:auto}'+
+    '.eqcard{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:var(--panel2)}'+
+    '.eqhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}'+
+    '.eqhead .nm{font-weight:800;font-size:15px}'+
+    '.eqhead .em{color:var(--muted);font-size:13px}'+
+    '.eqbadge{background:var(--chip);border-radius:20px;padding:3px 10px;font-size:11.5px;font-weight:700}'+
+    '.eqbadge.dono{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff}'+
+    '.eqbadge.off{color:var(--red)}'+
+    '.eqacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}'+
+    '.equigrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}'+
+    '@media(max-width:640px){.equigrid{grid-template-columns:1fr}}';
+  document.head.appendChild(s);
+}
+
+function permChecksHTML(prefix, sel){
+  sel=sel||{};
+  return MODS.map(function(m){return '<label class="permchk"><input type="checkbox" id="'+prefix+m[0]+'" '+(sel[m[0]]?'checked':'')+'> '+m[1]+'</label>';}).join('');
+}
+
+function applyPerms(){
+  injectEquipeStyles();
+  // Abas por permissão
+  document.querySelectorAll('#tabs button[data-tab]').forEach(function(b){
+    var t=b.dataset.tab;
+    if(t==='fiscal'){b.style.display=ehDono()?'':'none';return;}
+    if(t==='usuarios'){return;}
+    if(['painel','estoque','venda','vendas','financeiro'].indexOf(t)>=0){b.style.display=PERMS[t]?'':'none';}
+  });
+  // Botões do topo (Personalizar/Exportar) só pro dono
+  document.querySelectorAll('header.top button').forEach(function(b){
+    var tx=b.textContent||'';
+    if(/Personalizar|Exportar/.test(tx))b.style.display=ehDono()?'':'none';
+  });
+  // Aba Equipe: só o dono
+  if(ehDono() && !document.querySelector('#tabs button[data-tab="usuarios"]')){
+    var nav=document.getElementById('tabs');
+    var b=document.createElement('button');b.dataset.tab='usuarios';b.textContent='👥 Equipe';b.onclick=function(){setTab('usuarios');};
+    nav.appendChild(b);
+    var sec=document.createElement('section');sec.id='tab-usuarios';sec.className='hide';
+    sec.innerHTML=
+      '<div class="panel">'+
+        '<h3 style="margin-bottom:6px;font-size:16px">👥 Equipe & permissões</h3>'+
+        '<p class="muted" style="margin-bottom:16px;font-size:13.5px">Crie logins pros seus funcionários e escolha o que cada um pode acessar. Todos usam o sistema ao mesmo tempo, com os mesmos dados.</p>'+
+        '<div id="equipeList"></div>'+
+      '</div>'+
+      '<div class="panel" style="margin-top:16px">'+
+        '<h3 style="margin-bottom:12px;font-size:15px">+ Adicionar funcionário</h3>'+
+        '<div class="equigrid">'+
+          '<div><label>Nome</label><input id="fuNome" placeholder="Ex: Maria"></div>'+
+          '<div><label>E-mail (login)</label><input id="fuEmail" type="email" placeholder="maria@email.com"></div>'+
+          '<div><label>Senha (mín. 6)</label><input id="fuSenha" type="password" placeholder="••••••"></div>'+
+        '</div>'+
+        '<div style="margin:14px 0 4px"><span class="muted" style="font-size:12.5px;font-weight:700">Pode acessar:</span>'+
+          '<div class="permrow" id="fuPerms"></div>'+
+        '</div>'+
+        '<button class="btn primary" style="margin-top:14px" onclick="addFuncionario()">Criar acesso do funcionário</button>'+
+        '<div id="fuMsg" style="margin-top:10px;font-size:13.5px"></div>'+
+      '</div>';
+    var host=document.getElementById('tab-painel');
+    if(host&&host.parentNode)host.parentNode.appendChild(sec);
+  }
+  // Primeira aba visível
+  var order=['painel','estoque','venda','vendas','financeiro'];
+  var first=ehDono()?'painel':order.find(function(t){return PERMS[t];});
+  if(!ehDono() && !first){
+    var w=document.querySelector('.wrap');
+    if(w)w.innerHTML='<div class="panel" style="max-width:460px;margin:40px auto;text-align:center">'+
+      '<div style="font-size:38px">🔒</div><h2 style="margin:8px 0;font-size:19px">Sem funções liberadas</h2>'+
+      '<p class="muted" style="font-size:14px">Seu acesso ainda não tem nenhuma função habilitada. Peça pro dono liberar no menu <b>Equipe</b>.</p>'+
+      '<button class="btn" style="margin-top:16px" onclick="sair()">Sair</button></div>';
+    return;
+  }
+  setTab(first||'venda');
+}
+
+async function renderEquipe(){
+  var pf=$('fuPerms'); if(pf&&!pf.dataset.done){pf.innerHTML=permChecksHTML('fuperm_',{venda:true,estoque:true});pf.dataset.done='1';}
+  var box=$('equipeList'); if(!box)return;
+  box.innerHTML='<p class="muted">Carregando equipe...</p>';
+  var {data:mems,error}=await sb.from('loja_membros').select('*').eq('loja_id',LOJA_ID).order('created_at');
+  if(error){box.innerHTML='<p class="muted">Erro ao carregar: '+esc(error.message)+'</p>';return;}
+  if(!mems||!mems.length){box.innerHTML='<p class="muted">Nenhum membro ainda.</p>';return;}
+  var h='';
+  mems.forEach(function(m){
+    if(m.papel==='dono'){
+      h+='<div class="eqcard"><div class="eqhead"><span class="nm">'+esc(m.nome||'Dono')+'</span>'+
+         '<span class="em">'+esc(m.email||'')+'</span><span class="eqbadge dono">Dono — acesso total</span></div></div>';
+    }else{
+      var ativo=m.ativo!==false;
+      h+='<div class="eqcard"><div class="eqhead">'+
+           '<span class="nm">'+esc(m.nome||'Funcionário')+'</span>'+
+           '<span class="em">'+esc(m.email||'')+'</span>'+
+           (ativo?'<span class="eqbadge">Ativo</span>':'<span class="eqbadge off">Pausado</span>')+
+         '</div>'+
+         '<div class="muted" style="font-size:12px;font-weight:700;margin-bottom:2px">Pode acessar:</div>'+
+         '<div class="permrow">'+permChecksHTML('perm_'+m.id+'_', m.permissoes||{})+'</div>'+
+         '<div class="eqacts">'+
+           '<button class="btn sm primary" onclick="salvarPermsMembro(\''+m.id+'\')">Salvar permissões</button>'+
+           '<button class="btn sm" onclick="toggleMembroAtivo(\''+m.id+'\','+ativo+')">'+(ativo?'Pausar acesso':'Reativar')+'</button>'+
+           '<button class="btn sm danger" onclick="delMembro(\''+m.id+'\')">Remover</button>'+
+         '</div></div>';
+    }
+  });
+  box.innerHTML=h;
+}
+
+async function salvarPermsMembro(id){
+  var perms={};MODS.forEach(function(m){var c=$('perm_'+id+'_'+m[0]);perms[m[0]]=c?c.checked:false;});
+  var {error}=await sb.from('loja_membros').update({permissoes:perms}).eq('id',id);
+  if(error){toastOk('❌ Erro: '+error.message);return;}
+  toastOk('✅ Permissões salvas.');
+}
+async function toggleMembroAtivo(id,ativo){
+  var {error}=await sb.from('loja_membros').update({ativo:!ativo}).eq('id',id);
+  if(error){toastOk('❌ Erro: '+error.message);return;}
+  renderEquipe();
+}
+async function delMembro(id){
+  if(!confirm('Remover o acesso deste funcionário? Ele não conseguirá mais entrar.'))return;
+  var {error}=await sb.from('loja_membros').delete().eq('id',id);
+  if(error){toastOk('❌ Erro: '+error.message);return;}
+  renderEquipe();
+}
+async function addFuncionario(){
+  var msg=$('fuMsg');msg.style.color='';msg.textContent='';
+  var nome=$('fuNome').value.trim();var email=$('fuEmail').value.trim();var senha=$('fuSenha').value;
+  if(!nome){msg.style.color='var(--red)';msg.textContent='Informe o nome.';return;}
+  if(!email||email.indexOf('@')<0){msg.style.color='var(--red)';msg.textContent='Informe um e-mail válido.';return;}
+  if(!senha||senha.length<6){msg.style.color='var(--red)';msg.textContent='A senha precisa ter ao menos 6 caracteres.';return;}
+  var perms={};MODS.forEach(function(m){var c=$('fuperm_'+m[0]);perms[m[0]]=c?c.checked:false;});
+  msg.style.color='var(--muted)';msg.textContent='Criando acesso...';
+  // Cria o login sem derrubar a sessão do dono (cliente temporário isolado)
+  var tmp=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON,{auth:{storageKey:'jlloja-tmpadmin',persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  var newUid=null;
+  try{
+    var {data:su,error:e1}=await tmp.auth.signUp({email:email,password:senha});
+    if(e1){
+      if(/registered|already/i.test(e1.message||'')){msg.style.color='var(--red)';msg.textContent='Esse e-mail já tem uma conta. Use um e-mail novo pro funcionário.';return;}
+      throw e1;
+    }
+    newUid=su&&su.user?su.user.id:null;
+  }catch(err){msg.style.color='var(--red)';msg.textContent='Erro ao criar login: '+(err.message||err);return;}
+  finally{try{await tmp.auth.signOut();}catch(_){}}
+  if(!newUid){msg.style.color='var(--red)';msg.textContent='Não consegui criar o login. Verifique se o e-mail é novo.';return;}
+  var {error:e2}=await sb.from('loja_membros').insert({loja_id:LOJA_ID,user_id:newUid,email:email,nome:nome,papel:'funcionario',permissoes:perms,ativo:true});
+  if(e2){msg.style.color='var(--red)';msg.textContent='Login criado, mas falhou ao vincular: '+e2.message;return;}
+  $('fuNome').value='';$('fuEmail').value='';$('fuSenha').value='';
+  msg.style.color='var(--green)';msg.textContent='✓ Funcionário criado! Passe o e-mail e a senha pra ele acessar em '+location.origin+'/cadastro.html';
+  renderEquipe();
+}
 
 /* inicia na nuvem */
 loadCloud();
