@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JL Loja — Sistema pra loja de roupas</title>
-<meta name="description" content="Controle estoque por tamanho e cor, vendas, caixa e financeiro da sua loja de roupas num lugar só. Na nuvem, acesse de qualquer aparelho. R$119/mês.">
+<title>JL Gestão — Sistema pra loja, lanchonete, distribuidora e MEI</title>
+<meta name="description" content="Controle estoque por tamanho e cor, vendas, caixa e financeiro da sua loja de roupas num lugar só. Na nuvem, acesse de qualquer aparelho. A partir de R$89/mês.">
 <meta property="og:title" content="JL Loja — Sua loja de roupas organizada">
-<meta property="og:description" content="Estoque por tamanho/cor, PDV, vendas, caixa e financeiro. Na nuvem. R$119/mês.">
+<meta property="og:description" content="Estoque por tamanho/cor, PDV, vendas, caixa e financeiro. Na nuvem. A partir de R$89/mês.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -67,8 +67,10 @@
   .price-sec .sec-head h2{color:#fff}.price-sec .sec-head p{color:#c9bfe0}
   .price-card{max-width:440px;margin:0 auto;background:#fff;color:var(--ink);border-radius:24px;padding:34px 30px;box-shadow:var(--sh-lg);text-align:center;position:relative;overflow:hidden}
   .price-card .plan{font-family:'Poppins';font-weight:700;color:var(--brand);font-size:15px;letter-spacing:1px;text-transform:uppercase}
-  .price-card .val{font-family:'Poppins';font-weight:800;font-size:56px;line-height:1;margin:12px 0 2px}
+  .price-card .promo{display:inline-block;background:linear-gradient(135deg,#ff7a00,#ff3d81);color:#fff;font-weight:800;font-size:12.5px;letter-spacing:.5px;padding:5px 12px;border-radius:999px;margin:10px 0 2px}
+  .price-card .val{font-family:'Poppins';font-weight:800;font-size:56px;line-height:1;margin:8px 0 2px}
   .price-card .val small{font-size:20px;color:var(--muted);font-weight:600}
+  .price-card .val .old{font-size:26px;color:var(--muted);font-weight:600;text-decoration:line-through;margin-right:6px;vertical-align:middle}
   .price-card ul{list-style:none;text-align:left;margin:20px 0}
   .price-card li{position:relative;padding-left:28px;margin-bottom:11px;font-size:15.5px}
   .price-card li::before{content:"✓";position:absolute;left:0;color:var(--ok);font-weight:800}
@@ -93,7 +95,7 @@
 <body>
 <header>
   <div class="wrap">
-    <div class="logo">🛍️ JL LOJA</div>
+    <div class="logo">🛍️ JL GESTÃO</div>
     <div class="hgrp">
       <a class="enter hide-sm" href="cadastro.html">Já sou assinante</a>
       <a class="btn" href="https://www.asaas.com/c/7punqudnyfkrcsmc">Assinar</a>
@@ -104,17 +106,17 @@
 <section class="hero" style="padding:0">
   <div class="wrap">
     <div>
-      <span class="eyebrow">🛍️ Pra lojas de roupas, brechós e boutiques</span>
-      <h1>Sua loja de roupas <span class="hl">organizada</span> — estoque, vendas e caixa num lugar só.</h1>
-      <p class="sub">Saiba exatamente o que tem no estoque (por tamanho e cor), registre vendas em segundos e acompanhe seu lucro de verdade. Tudo na nuvem, do celular ou do computador.</p>
+      <span class="eyebrow">🛍️ Pra loja, lanchonete, distribuidora e MEI</span>
+      <h1>Seu negócio <span class="hl">organizado</span> — estoque, vendas e caixa num lugar só.</h1>
+      <p class="sub">Saiba exatamente o que tem no estoque, registre vendas em segundos e acompanhe seu lucro de verdade. Tudo na nuvem, do celular ou do computador — simples, sem burocracia.</p>
       <div class="cta-row">
-        <a class="btn big" href="https://www.asaas.com/c/7punqudnyfkrcsmc">Assinar por R$119/mês →</a>
+        <a class="btn big" href="https://www.asaas.com/c/7punqudnyfkrcsmc">Assinar por R$89/mês →</a>
         <a class="btn ghost big" href="#recursos">Ver recursos</a>
       </div>
       <div class="trust">
         <span>✓ Sem fidelidade</span>
         <span>✓ <b>Acesso na nuvem</b></span>
-        <span>✓ Nota fiscal (em breve)</span>
+        <span>✓ Ideal pra MEI</span>
       </div>
     </div>
     <div class="hero-art"><img src="loja_dash.jpg" alt="Painel de controle da loja" loading="eager"></div>
@@ -130,7 +132,7 @@
       <div class="feat"><div class="ic">🧾</div><h3>Vendas e relatórios</h3><p>Total vendido, lucro estimado, ticket médio e vendas por forma de pagamento.</p></div>
       <div class="feat"><div class="ic">💰</div><h3>Financeiro e caixa</h3><p>Compras de mercadoria, despesas e o resultado real do caixa — quanto sobrou no bolso.</p></div>
       <div class="feat"><div class="ic">☁️</div><h3>Na nuvem</h3><p>Seus dados salvos no servidor. Acesse de qualquer aparelho, a qualquer hora.</p></div>
-      <div class="feat"><div class="ic">📄</div><h3>Nota fiscal <span class="soon">em breve</span></h3><p>Emissão de NFC-e/NF-e integrada, direto da venda. Já incluído no plano.</p></div>
+      <div class="feat"><div class="ic">📄</div><h3>Nota fiscal <span class="soon">em breve</span></h3><p>Emissão de NFC-e/NFS-e integrada — <b>em desenvolvimento</b>, chega em breve pra quem precisar (MEI geralmente é dispensado).</p></div>
     </div>
   </div>
 </section>
@@ -151,14 +153,15 @@
     <div class="sec-head"><div class="kick">Plano único</div><h2>Tudo incluído</h2><p>Sem taxa por venda. Sem fidelidade. Cancele quando quiser.</p></div>
     <div class="price-card">
       <div class="plan">Plano Loja</div>
-      <div class="val">R$119<small>/mês</small></div>
+      <div class="promo">🔥 Preço de lançamento</div>
+      <div class="val"><span class="old">R$119</span> R$89<small>/mês</small></div>
       <ul>
         <li>Estoque por tamanho e cor, ilimitado</li>
         <li>PDV (venda rápida) com baixa automática</li>
         <li>Vendas, relatórios e lucro</li>
         <li>Financeiro e controle de caixa</li>
         <li>Acesso na nuvem, de qualquer aparelho</li>
-        <li>Nota fiscal (em breve, já incluída)</li>
+        <li>Nota fiscal — opcional, em breve</li>
       </ul>
       <a class="btn big" href="https://www.asaas.com/c/7punqudnyfkrcsmc">Assinar agora →</a>
       <div class="fine">Pague por PIX, boleto ou cartão. Acesso liberado por e-mail assim que o pagamento é confirmado.</div>
@@ -173,7 +176,7 @@
       <details><summary>Funciona no celular?</summary><p>Sim. É na nuvem e abre no celular, tablet ou computador — você acessa de onde estiver.</p></details>
       <details><summary>Meus dados ficam salvos?</summary><p>Sim, tudo fica salvo no servidor com segurança e separado por loja. Se trocar de aparelho, é só entrar de novo.</p></details>
       <details><summary>Consigo controlar tamanhos e cores?</summary><p>Sim! Cada tamanho/cor tem seu próprio estoque, com alerta quando está acabando.</p></details>
-      <details><summary>Tem emissão de nota fiscal?</summary><p>Está a caminho e já está incluída no plano. Assim que liberar, você emite direto da venda.</p></details>
+      <details><summary>Preciso emitir nota fiscal?</summary><p>Depende do seu negócio — <b>MEI e muitos pequenos negócios não são obrigados</b> a emitir pro consumidor final. Por isso o sistema já funciona 100% sem nota. A emissão de NFC-e/NFS-e está em desenvolvimento e chega em breve pra quem precisar.</p></details>
       <details><summary>Preciso de fidelidade?</summary><p>Não. É mensal, sem fidelidade — você cancela quando quiser.</p></details>
     </div>
   </div>
@@ -183,13 +186,13 @@
   <div class="wrap">
     <h2>Organize sua loja hoje</h2>
     <p>Pare de perder tempo com planilha e caderno. Tenha controle de verdade da sua loja.</p>
-    <a class="btn gold big" href="https://www.asaas.com/c/7punqudnyfkrcsmc">Assinar por R$119/mês →</a>
+    <a class="btn gold big" href="https://www.asaas.com/c/7punqudnyfkrcsmc">Assinar por R$89/mês →</a>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <div class="logo">🛍️ JL LOJA</div>
+    <div class="logo">🛍️ JL GESTÃO</div>
     <div>Dúvidas? <a class="wa" href="https://wa.me/5565993439523">WhatsApp (65) 99343-9523</a></div>
     <div class="legal">JL Soluções Inteligentes Ltda · CNPJ 69.061.744/0001-12 · Várzea Grande/MT<br>© 2026 JL Loja — Sistema de gestão para lojas. Todos os direitos reservados.</div>
   </div>
