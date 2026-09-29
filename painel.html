@@ -309,7 +309,7 @@
         <div class="field"><label>Estoque mínimo (alerta)</label><input id="pMin" type="number" step="1" min="0" placeholder="Ex: 2"></div>
         <div class="field"><label>Código / SKU (opcional)</label><input id="pSku" placeholder="Opcional"></div>
       </div>
-      <div style="border-top:1px solid var(--line);margin:6px 0 12px;padding-top:12px">
+      <div id="prodFiscalBox" style="border-top:1px solid var(--line);margin:6px 0 12px;padding-top:12px">
         <div style="font-weight:700;font-size:13px;margin-bottom:2px">Dados fiscais <span class="muted" style="font-weight:400">(pra nota fiscal — opcional agora)</span></div>
         <p class="muted" style="font-size:12px;margin-bottom:10px">Já vêm valores padrão pra loja de roupa. Ajuste se seu contador indicar.</p>
         <div class="grid3">
@@ -1047,6 +1047,7 @@ openProduct = function(id){
 /* ====== MULTIUSUÁRIO: permissões + equipe ====== */
 const MODS=[['painel','📊 Painel (faturamento/lucro)'],['estoque','📦 Estoque'],['venda','🛒 Nova venda (PDV)'],['vendas','🧾 Vendas (histórico)'],['entregas','🛵 Entregas'],['financeiro','💰 Financeiro']];
 function ehDono(){return PAPEL==='dono';}
+function temPlanoNF(){return !!(LOJA && LOJA.plano_nf===true);}
 
 function injectEquipeStyles(){
   if(document.getElementById('equipeCss'))return;
@@ -1074,6 +1075,8 @@ function permChecksHTML(prefix, sel){
 
 function applyPerms(){
   injectEquipeStyles();
+  // esconde o bloco fiscal do produto quando não é o plano com nota fiscal
+  var _pfb=document.getElementById('prodFiscalBox'); if(_pfb)_pfb.style.display=temPlanoNF()?'':'none';
   // injeta a aba Entregas (uma vez) — visibilidade controlada pela permissão
   if(!document.querySelector('#tabs button[data-tab="entregas"]')){
     var navE=document.getElementById('tabs');
@@ -1090,7 +1093,7 @@ function applyPerms(){
   // Abas por permissão
   document.querySelectorAll('#tabs button[data-tab]').forEach(function(b){
     var t=b.dataset.tab;
-    if(t==='fiscal'){b.style.display=ehDono()?'':'none';return;}
+    if(t==='fiscal'){b.style.display=(ehDono()&&temPlanoNF())?'':'none';return;}
     if(t==='usuarios'){return;}
     if(['painel','estoque','venda','vendas','entregas','financeiro'].indexOf(t)>=0){b.style.display=PERMS[t]?'':'none';}
   });

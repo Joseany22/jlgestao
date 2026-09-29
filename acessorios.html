@@ -111,6 +111,15 @@
   .mfoot{text-align:center;color:#6b7488;font-size:10px;margin-top:10px}
   @media(max-width:560px){.mstats{grid-template-columns:1fr 1fr}.mock-top .mtabs{display:none}}
 </style>
+<style>
+  .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px;margin:0 auto;align-items:stretch}
+  .price-grid .price-card{max-width:none;margin:0;display:flex;flex-direction:column;text-align:left}
+  .price-grid .price-card .plan,.price-grid .price-card .promo,.price-grid .price-card .val{text-align:center}
+  .price-grid .price-card ul{flex:1}
+  .price-card.nf{border:2px solid var(--gold)}
+  .price-card .planbadge{position:absolute;top:14px;right:14px;background:linear-gradient(135deg,#caa257,#e8c987);color:#3a2c10;font-weight:800;font-size:11px;padding:4px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.5px}
+  @media(max-width:760px){.price-grid{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 <header>
@@ -152,7 +161,6 @@
       <div class="feat"><div class="ic">🧾</div><h3>Vendas e lucro</h3><p>Total vendido, lucro estimado, ticket médio e vendas por forma de pagamento.</p></div>
       <div class="feat"><div class="ic">💰</div><h3>Financeiro e caixa</h3><p>Compras de mercadoria, despesas e o resultado real do caixa — quanto sobrou no bolso.</p></div>
       <div class="feat"><div class="ic">☁️</div><h3>Na nuvem</h3><p>Seus dados salvos no servidor. Acesse de qualquer aparelho, a qualquer hora.</p></div>
-      <div class="feat"><div class="ic">📄</div><h3>Nota fiscal <span class="soon">em breve</span></h3><p>Emissão de NFC-e/NFS-e integrada — <b>em desenvolvimento</b>, chega em breve pra quem precisar (MEI geralmente é dispensado).</p></div>
     </div>
   </div>
 </section>
@@ -170,22 +178,21 @@
 
 <section class="price-sec">
   <div class="wrap">
-    <div class="sec-head"><div class="kick">Plano único</div><h2>Tudo incluído</h2><p>Sem taxa por venda. Sem fidelidade. Cancele quando quiser.</p></div>
-    <div class="price-card">
-      <div class="plan">Plano Acessórios</div>
-      <div class="promo">🔥 Preço de lançamento</div>
-      <div class="val"><span class="old">R$119</span> R$89<small>/mês</small></div>
-      <ul>
+    <div class="sec-head"><div class="kick">Escolha seu plano</div><h2>Planos e preços</h2><p>Sem taxa por venda. Sem fidelidade. Cancele quando quiser.</p></div><div class="price-grid"><div class="price-card"><div class="plan">Gestão</div><div class="promo">🔥 Preço de lançamento</div><div class="val"><span class="old">R$119</span> R$89<small>/mês</small></div><ul>
         <li>Estoque por modelo e variação, ilimitado</li>
         <li>PDV (venda rápida) com baixa automática</li>
         <li>Vendas, relatórios e lucro</li>
         <li>Financeiro e controle de caixa</li>
         <li>Acesso na nuvem, de qualquer aparelho</li>
-        <li>Nota fiscal — opcional, em breve</li>
-      </ul>
-      <a class="btn big" href="https://www.asaas.com/c/7punqudnyfkrcsmc">Assinar agora →</a>
-      <div class="fine">Pague por PIX, boleto ou cartão. Acesso liberado por e-mail assim que o pagamento é confirmado.</div>
-    </div>
+        </ul><a class="btn big" href="https://www.asaas.com/c/7punqudnyfkrcsmc">Assinar agora →</a><div class="fine">Pague por PIX, boleto ou cartão. Acesso liberado por e-mail assim que o pagamento é confirmado.</div></div><div class="price-card nf"><div class="planbadge">Completo</div><div class="plan">Gestão + Nota Fiscal</div><div class="promo" style="visibility:hidden">.</div><div class="val">R$149<small>/mês</small></div><ul>
+        <li>Estoque por modelo e variação, ilimitado</li>
+        <li>PDV (venda rápida) com baixa automática</li>
+        <li>Vendas, relatórios e lucro</li>
+        <li>Financeiro e controle de caixa</li>
+        <li>Acesso na nuvem, de qualquer aparelho</li>
+        <li><b>Emissão de NFC-e (cupom fiscal)</b></li>
+        <li><b>Emissão de NFS-e (nota de serviço)</b></li>
+        </ul><a class="btn gold big" href="https://wa.me/5565993439523?text=Quero%20o%20plano%20Gest%C3%A3o%20%2B%20Nota%20Fiscal%20(NFC-e%2FNFS-e)">Quero com nota fiscal →</a><div class="fine">Tudo do plano Gestão + emissão de NFC-e e NFS-e. Ativação com seu certificado digital — fale com a gente que a gente configura pra você.</div></div></div>
   </div>
 </section>
 
@@ -196,7 +203,7 @@
       <details><summary>Funciona no celular?</summary><p>Sim. É na nuvem e abre no celular, tablet ou computador — você acessa de onde estiver.</p></details>
       <details><summary>Meus dados ficam salvos?</summary><p>Sim, tudo fica salvo no servidor com segurança e separado por conta. Se trocar de aparelho, é só entrar de novo.</p></details>
       <details><summary>Serve pra bijuteria, semijoia e presentes?</summary><p>Sim! Funciona pra qualquer loja de acessórios — cada modelo e variação tem seu estoque próprio.</p></details>
-      <details><summary>Preciso emitir nota fiscal?</summary><p>Depende do seu negócio — <b>MEI e muitos pequenos negócios não são obrigados</b> a emitir pro consumidor final. Por isso o sistema já funciona 100% sem nota. A emissão de NFC-e/NFS-e está em desenvolvimento e chega em breve pra quem precisar.</p></details>
+      <details><summary>Preciso emitir nota fiscal?</summary><p><b>MEI e muitos pequenos negócios não são obrigados</b> a emitir nota pro consumidor final — por isso este plano funciona 100% sem nota, do jeitinho que a maioria precisa.</p></details>
       <details><summary>Preciso de fidelidade?</summary><p>Não. É mensal, sem fidelidade — você cancela quando quiser.</p></details>
     </div>
   </div>
