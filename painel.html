@@ -447,6 +447,15 @@ function saveSettings(){
 
 /* ============ painel / kpis ============ */
 function estoqueBaixo(p){const min=Number(p.minimo)||0;return min>0 && (Number(p.estoque)||0)<=min;}
+function sugestaoCompra(p){
+  const est=Number(p.estoque)||0, min=Number(p.minimo)||0;
+  const dia30=Date.now()-30*86400000; let vend=0;
+  (db.sales||[]).forEach(s=>{const t=new Date(s.data).getTime(); if(t>=dia30){(s.itens||[]).forEach(i=>{if(i.id===p.id)vend+=Number(i.qty)||0;});}});
+  let alvo;
+  if(vend>0){ alvo=Math.ceil((vend/30)*30); } // cobre ~30 dias de venda
+  else { alvo = min>0 ? min*2 : 1; }          // sem histórico: dobro do mínimo
+  return Math.max(alvo-est, 1);
+}
 function vendasDoDia(){const h=hojeISO();return db.sales.filter(s=>(s.data||'').slice(0,10)===h);}
 function renderPainel(){
   const un=db.products.reduce((a,p)=>a+(Number(p.estoque)||0),0);
@@ -463,9 +472,9 @@ function renderPainel(){
   ];
   $('kpis').innerHTML=cards.map(k=>`<div class="kpi${k.go?' clickable':''}" ${k.go?`onclick="painelIr('${k.go}')"`:''} ${k.t?`title="${esc(k.t)}"`:''}><div class="bar" style="background:${k.c||'var(--brand)'}"></div>${k.t?'<span class="hintq">ⓘ</span>':''}<div class="n">${k.n}</div><div class="l">${k.l}${k.go?' <span class="muted" style="font-size:11px">›</span>':''}</div></div>`).join('');
   $('lowList').innerHTML = baixos.length
-    ? `<div class="tablewrap"><table><thead><tr><th>Produto</th><th>Tam</th><th>Cor</th><th class="center">Estoque</th><th class="center">Mínimo</th></tr></thead><tbody>`+
-      baixos.map(p=>`<tr><td><b>${esc(p.nome)}</b></td><td>${esc(p.tamanho||'—')}</td><td>${esc(p.cor||'—')}</td><td class="center low">${Number(p.estoque)||0}</td><td class="center muted">${Number(p.minimo)||0}</td></tr>`).join('')+
-      `</tbody></table></div>`
+    ? `<div class="tablewrap"><table><thead><tr><th>Produto</th><th>Tam</th><th>Cor</th><th class="center">Estoque</th><th class="center">Mínimo</th><th class="center" title="Sugestão de quanto comprar pra repor: baseada nas vendas dos últimos 30 dias; sem histórico, repõe até o dobro do mínimo.">Comprar</th></tr></thead><tbody>`+
+      baixos.map(p=>`<tr><td><b>${esc(p.nome)}</b></td><td>${esc(p.tamanho||'—')}</td><td>${esc(p.cor||'—')}</td><td class="center low">${Number(p.estoque)||0}</td><td class="center muted">${Number(p.minimo)||0}</td><td class="center"><b style="color:var(--brand)">+${sugestaoCompra(p)}</b></td></tr>`).join('')+
+      `</tbody></table><div class="muted" style="font-size:12px;margin-top:8px">💡 <b>Comprar</b> = sugestão pra repor, calculada pelas vendas dos últimos 30 dias (sem histórico, repõe até o dobro do mínimo).</div></div>`
     : `<div class="empty">Nenhum produto abaixo do estoque mínimo. 👍</div>`;
 }
 
@@ -667,6 +676,8 @@ function renderVendas(){
     const ip=(s.itens||[]).reduce((x,i)=>x+((Number(i.preco)||0)-(Number(i.custo)||0))*(Number(i.qty)||0),0);
     return a+ip-(Number(s.desconto)||0)+(Number(s.acrescimo)||0);
   },0);
+  const cmv=list.reduce((a,s)=>a+(s.itens||[]).reduce((x,i)=>x+(Number(i.custo)||0)*(Number(i.qty)||0),0),0);
+  const margem = totVend>0 ? (lucro/totVend*100) : 0;
   const nVendas=list.length;
   const ticket=nVendas?totVend/nVendas:0;
   // resumo por forma de pagamento (sempre do período todo, ignorando o filtro de forma)
@@ -678,6 +689,8 @@ function renderVendas(){
   const cards=[
     {n:money(totVend),l:'Total vendido no período',c:'var(--green)',t:'Soma do valor de todas as vendas no período escolhido (o quanto entrou).'},
     {n:money(lucro),l:'Lucro estimado',c:'var(--brand)',t:'Estimativa do que sobra: para cada item vendido, o preço de venda menos o custo, descontando os descontos e somando os acréscimos/juros. Não é o total vendido — é o ganho aproximado.'},
+    {n:money(cmv),l:'CMV (custo do que vendeu)',c:'var(--amber)',t:'Custo da Mercadoria Vendida: quanto você pagou pelos produtos que saíram nas vendas do período. Total vendido menos o CMV (e descontos) ≈ seu lucro.'},
+    {n:margem.toFixed(0)+'%',l:'Margem de lucro',t:'Quanto do que você vendeu vira lucro, em média: lucro dividido pelo total vendido.'},
     {n:nVendas,l:'Nº de vendas',t:'Quantas vendas você registrou no período.'},
     {n:money(ticket),l:'Média por venda',t:'Valor médio de cada venda = total vendido dividido pelo número de vendas. Ajuda a saber quanto cada cliente costuma gastar.'}
   ];
