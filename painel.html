@@ -823,21 +823,36 @@ setTab('painel');
 const SUPABASE_URL='https://xgazzkhpxkbjrtvdblag.supabase.co';
 const SUPABASE_ANON='sb_publishable_MffsIo5pQbuYeBZhzeg9hQ_23uZK5zP';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {auth:{storageKey:'jlloja-auth'}});
-let LOJA_ID=null, LOJA=null, PERMS={}, PAPEL='dono', MEU_UID=null, MEU_EMAIL='';
+let LOJA_ID=null, LOJA=null, PERMS={}, PAPEL='dono', MEU_UID=null, MEU_EMAIL='', DIAS_TESTE=0;
 const LOJA_PAG_URL='https://www.asaas.com/c/7punqudnyfkrcsmc'; // link de assinatura (preenchido no deploy)
 
 function save(){/* no-op: agora salvamos direto na nuvem */}
 
-function mostrarBloqueio(){
+function mostrarBloqueio(motivo){
+  var ehTeste = motivo==='teste';
+  var icone = ehTeste ? '🎁' : '🔒';
+  var titulo = ehTeste ? 'Seu teste grátis terminou' : 'Assinatura pendente';
+  var texto = ehTeste
+    ? 'Esperamos que tenha gostado! 💜 Seus dados continuam salvos. Pra continuar usando o sistema, é só assinar — seu painel volta na hora que o pagamento for confirmado.'
+    : 'Seu acesso está pausado porque a mensalidade está em aberto. Assim que o pagamento for confirmado, seu painel volta sozinho. 💜';
+  var botao = ehTeste ? 'Assinar agora (R$89/mês)' : 'Regularizar assinatura (R$89/mês)';
   document.body.innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Segoe UI,system-ui,Arial,sans-serif;background:#0d1117;color:#eef2f8">'+
    '<div style="max-width:440px;background:#151b26;border:1px solid #252d3d;border-radius:18px;padding:30px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.45)">'+
-   '<div style="font-size:40px">🔒</div>'+
-   '<h1 style="font-size:22px;margin:10px 0 6px">Assinatura pendente</h1>'+
-   '<p style="color:#9aa6bd;font-size:15px;line-height:1.6">Seu acesso está pausado porque a mensalidade está em aberto. Assim que o pagamento for confirmado, seu painel volta sozinho. 💜</p>'+
-   '<a href="'+LOJA_PAG_URL+'" target="_blank" style="display:block;margin-top:20px;background:linear-gradient(135deg,#7c5cff,#9d84ff);color:#fff;text-decoration:none;font-weight:800;padding:14px;border-radius:12px">Regularizar assinatura (R$89/mês)</a>'+
+   '<div style="font-size:40px">'+icone+'</div>'+
+   '<h1 style="font-size:22px;margin:10px 0 6px">'+titulo+'</h1>'+
+   '<p style="color:#9aa6bd;font-size:15px;line-height:1.6">'+texto+'</p>'+
+   '<a href="'+LOJA_PAG_URL+'" target="_blank" style="display:block;margin-top:20px;background:linear-gradient(135deg,#7c5cff,#9d84ff);color:#fff;text-decoration:none;font-weight:800;padding:14px;border-radius:12px">'+botao+'</a>'+
    '<p style="margin-top:14px;font-size:13px;color:#9aa6bd">Dúvidas? <a href="https://wa.me/5565993439523" style="color:#9d84ff;font-weight:700">WhatsApp (65) 99343-9523</a></p>'+
    '<a onclick="sair()" style="display:inline-block;margin-top:16px;color:#9aa6bd;font-size:13px;cursor:pointer">Sair</a>'+
    '</div></div>';
+}
+function mostrarBannerTeste(dias){
+  if(document.getElementById('trialBar'))return;
+  var bar=document.createElement('div');bar.id='trialBar';
+  bar.style.cssText='background:linear-gradient(135deg,#7c5cff,#9d84ff);color:#fff;padding:10px 14px;border-radius:12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13.5px;font-weight:700;box-shadow:0 8px 24px rgba(124,92,255,.3)';
+  bar.innerHTML='🎁 Teste grátis — faltam <b style="margin:0 3px">'+dias+'</b> dia'+(dias>1?'s':'')+'. Aproveite e já garanta assinando.'+
+    '<a href="'+LOJA_PAG_URL+'" target="_blank" style="margin-left:auto;background:#fff;color:#5b34d6;text-decoration:none;font-weight:800;padding:7px 14px;border-radius:9px">Assinar agora</a>';
+  var wrap=document.querySelector('.wrap'); if(wrap) wrap.insertBefore(bar, wrap.firstChild);
 }
 
 async function fetchAll(){
@@ -889,10 +904,19 @@ async function loadCloud(){
   if(!lojaRow){await sb.auth.signOut();location.href='cadastro.html';return;}
   LOJA=lojaRow;LOJA_ID=LOJA.id;
   if(PAPEL==='dono')PERMS={painel:true,estoque:true,venda:true,vendas:true,entregas:true,financeiro:true};
-  if(LOJA.ativo===false){ mostrarBloqueio(); return; }
+  // Controle de acesso: assinante pago OU dentro do teste grátis de 7 dias
+  var TRIAL_DIAS=7;
+  var pago = LOJA.ativo===true;
+  var criado = LOJA.created_at ? new Date(LOJA.created_at) : null;
+  var fimTeste = criado ? new Date(criado.getTime()+TRIAL_DIAS*86400000) : null;
+  var msRest = fimTeste ? (fimTeste.getTime()-Date.now()) : -1;
+  var emTeste = msRest > 0;
+  if(!pago && !emTeste){ mostrarBloqueio('teste'); return; }
+  DIAS_TESTE = (!pago && emTeste) ? Math.ceil(msRest/86400000) : 0;
   db.brand={name:LOJA.nome||'Minha Loja',sub:LOJA.segmento||'Controle de estoque, vendas e financeiro',color:LOJA.cor||'#7c5cff'};
   await fetchAll();
   applyBrand(); injectHeader(); applyPerms();
+  if(DIAS_TESTE>0) mostrarBannerTeste(DIAS_TESTE);
 }
 
 /* ====== mutações -> nuvem ====== */
