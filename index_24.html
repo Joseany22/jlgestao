@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JL Gestão — Sistema para lanchonete</title>
-<meta name="description" content="Controle cardápio, venda no balcão, estoque de insumos, caixa e lucro da sua lanchonete num lugar só. Na nuvem. A partir de R$89/mês.">
+<title>JL Gestão — Sistema de gestão pro seu negócio</title>
+<meta name="description" content="Estoque, vendas, caixa e financeiro do seu negócio num lugar só. Feito pra loja, acessórios, lanchonete e distribuidora. Na nuvem. A partir de R$89/mês.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="JL Gestão — Sistema para lanchonete">
-<meta property="og:description" content="Controle cardápio, venda no balcão, estoque de insumos, caixa e lucro da sua lanchonete num lugar só. Na nuvem. A partir de R$89/mês.">
+<meta property="og:title" content="JL Gestão — Sistema de gestão pro seu negócio">
+<meta property="og:description" content="Estoque, vendas, caixa e financeiro num lugar só. Na nuvem. A partir de R$89/mês.">
 <meta property="og:image" content="https://jlgestao.pages.dev/og.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://jlgestao.pages.dev/og.jpg">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍔</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧩</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -128,11 +128,16 @@
   .wafloat svg{width:24px;height:24px;fill:#fff;flex:none}
   @media(max-width:560px){.wafloat{padding:0;width:56px;height:56px;justify-content:center;border-radius:50%}.wafloat .wafloat-txt{display:none}.wafloat svg{width:30px;height:30px}}
 </style>
+<style>
+  .seg{display:flex;flex-direction:column;text-decoration:none;transition:transform .15s,box-shadow .15s}
+  .seg:hover{transform:translateY(-4px);box-shadow:var(--sh-lg)}
+  .seg .go{margin-top:auto;padding-top:12px;color:var(--brand);font-weight:800;font-size:14px}
+</style>
 </head>
 <body>
 <header>
   <div class="wrap">
-    <div class="logo">🍔 JL GESTÃO</div>
+    <div class="logo">🧩 JL GESTÃO</div>
     <div class="hgrp">
       <a class="enter hide-sm" href="cadastro.html">Já sou cliente</a>
       <a class="btn" href="cadastro.html">Começar grátis</a>
@@ -143,12 +148,12 @@
 <section class="hero" style="padding:0">
   <div class="wrap">
     <div>
-      <span class="eyebrow">🍔 Feito pra lanchonete, hamburgueria e food</span>
-      <h1>Sua lanchonete <span class="hl">no controle</span> — vendas no balcão, estoque e caixa num lugar só.</h1>
-      <p class="sub">Registre cada pedido em segundos, controle o que entra e sai de insumos e produtos, e feche o caixa sabendo quanto sobrou. Tudo na nuvem, do celular ou do computador — simples, sem burocracia.</p>
+      <span class="eyebrow">🧩 Um sistema, feito pro seu ramo</span>
+      <h1>O sistema que se adapta ao <span class="hl">seu negócio</span>.</h1>
+      <p class="sub">Estoque, vendas, caixa e financeiro num lugar só — na nuvem, do celular ou do computador. Escolha seu segmento e veja como fica pra você.</p>
       <div class="cta-row">
         <a class="btn big" href="cadastro.html">Começar 7 dias grátis →</a>
-        <a class="btn ghost big" href="#recursos">Ver recursos</a>
+        <a class="btn ghost big" href="#segmentos">Escolher meu segmento</a>
       </div>
       <div class="trust">
         <span>🎁 <b>7 dias grátis</b></span>
@@ -157,30 +162,18 @@
         <span>✓ Suporte no WhatsApp</span>
       </div>
     </div>
-    <div class="hero-art"><div class="mock"><div class="mock-top"><span class="mdot">🍔</span><div><div class="mname">Sabor & Cia</div><small>Lanches e porções</small></div><span class="mtabs">Painel · Estoque · Vendas · Financeiro</span></div><div class="mstats"><div class="mstat"><div class="v">R$ 1.240</div><div class="l">Vendido hoje</div></div><div class="mstat"><div class="v">68</div><div class="l">Pedidos hoje</div></div><div class="mstat"><div class="v">R$ 18</div><div class="l">Ticket médio</div></div><div class="mstat"><div class="v">3</div><div class="l">Insumo baixo</div></div></div><div class="mtbl"><div class="h">Repor insumos e bebidas</div><div class="mrow"><span>Pão brioche</span><span class="mut">un</span><span><span class="lo">6</span> <span class="mut">/ 20</span></span></div><div class="mrow"><span>Coca-Cola lata</span><span class="mut">un</span><span><span class="lo">8</span> <span class="mut">/ 24</span></span></div><div class="mrow"><span>Embalagem marmita</span><span class="mut">un</span><span><span class="lo">15</span> <span class="mut">/ 50</span></span></div></div><div class="mfoot">Dados na nuvem · Sabor & Cia</div></div></div>
+    <div class="hero-art"><div class="mock"><div class="mock-top"><span class="mdot">🧩</span><div><div class="mname">Seu Negócio</div><small>Painel de gestão</small></div><span class="mtabs">Estoque · Vendas · Caixa · Financeiro</span></div><div class="mstats"><div class="mstat"><div class="v">R$ 14.320</div><div class="l">Vendido no mês</div></div><div class="mstat"><div class="v">R$ 128</div><div class="l">Ticket médio</div></div><div class="mstat"><div class="v">486</div><div class="l">Itens em estoque</div></div><div class="mstat"><div class="v">R$ 9.240</div><div class="l">Lucro no mês</div></div></div><div class="mtbl"><div class="h">Últimas vendas</div><div class="mrow"><span>Venda #1043</span><span class="mut">PIX</span><span>R$ 89,00</span></div><div class="mrow"><span>Venda #1042</span><span class="mut">Cartão</span><span>R$ 156,00</span></div><div class="mrow"><span>Venda #1041</span><span class="mut">Dinheiro</span><span>R$ 42,00</span></div></div><div class="mfoot">Dados na nuvem · Seu Negócio</div></div></div>
   </div>
 </section>
 
-<section id="recursos" class="feat-sec">
+<section id="segmentos" class="feat-sec">
   <div class="wrap">
-    <div class="sec-head"><div class="kick">Tudo que sua lanchonete precisa</div><h2>Controle completo, sem planilha</h2></div>
+    <div class="sec-head"><div class="kick">Escolha seu segmento</div><h2>Feito pro seu tipo de negócio</h2><p>Cada versão fala a língua do seu ramo — clique no seu e veja os recursos.</p></div>
     <div class="feats">
-      <div class="feat"><div class="ic">🍔</div><h3>Cardápio e produtos</h3><p>Cadastre lanches, bebidas e porções com preço e custo pra saber sua margem.</p></div>
-      <div class="feat"><div class="ic">⚡</div><h3>Venda rápida no balcão</h3><p>Monte o pedido, cobra e finaliza na hora — sem fila, sem confusão.</p></div>
-      <div class="feat"><div class="ic">📦</div><h3>Estoque de insumos e bebidas</h3><p>Acompanhe bebidas, embalagens e insumos, com alerta de "acabando".</p></div>
-      <div class="feat"><div class="ic">💰</div><h3>Caixa e lucro do dia</h3><p>Feche o caixa sabendo o total vendido, as despesas e quanto sobrou.</p></div>
-      <div class="feat"><div class="ic">☁️</div><h3>Na nuvem</h3><p>Seus dados salvos no servidor. Acesse do balcão, da cozinha ou de casa.</p></div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
-    <div class="sec-head"><div class="kick">Simples de usar</div><h2>Comece em 3 passos</h2></div>
-    <div class="steps">
-      <div class="step"><div class="n">1</div><h3>Crie sua conta grátis</h3><p>Comece o teste de 7 dias com seu nome e cores em 1 minuto — sem cartão.</p></div>
-      <div class="step"><div class="n">2</div><h3>Cadastre seu cardápio</h3><p>Adicione lanches, bebidas e porções com preço e custo.</p></div>
-      <div class="step"><div class="n">3</div><h3>Venda e acompanhe</h3><p>Registre as vendas e veja estoque, caixa e lucro em tempo real.</p></div>
+      <a class="feat seg" href="loja.html"><div class="ic">👗</div><h3>Loja de roupas</h3><p>Estoque por tamanho e cor, PDV, vendas e caixa.</p><span class="go">Ver planos e recursos →</span></a>
+      <a class="feat seg" href="acessorios.html"><div class="ic">👜</div><h3>Loja de acessórios</h3><p>Estoque por modelo e variação, PDV e financeiro.</p><span class="go">Ver planos e recursos →</span></a>
+      <a class="feat seg" href="lanchonete.html"><div class="ic">🍔</div><h3>Lanchonete</h3><p>Cardápio, venda no balcão, insumos e caixa.</p><span class="go">Ver planos e recursos →</span></a>
+      <a class="feat seg" href="distribuidora.html"><div class="ic">🚚</div><h3>Distribuidora</h3><p>Estoque em volume, pedidos no atacado e lucro.</p><span class="go">Ver planos e recursos →</span></a>
     </div>
   </div>
 </section>
@@ -188,16 +181,16 @@
 <section class="price-sec">
   <div class="wrap">
     <div class="sec-head"><div class="kick">Escolha seu plano</div><h2>Planos e preços</h2><p>Sem taxa por venda. Sem fidelidade. Cancele quando quiser.</p></div><div class="price-grid"><div class="price-card"><div class="plan">Gestão</div><div class="promo">🔥 Preço de lançamento</div><div class="val"><span class="old">R$119</span> R$89<small>/mês</small></div><ul>
-        <li>Cardápio e produtos ilimitados</li>
-        <li>Venda rápida no balcão</li>
-        <li>Estoque de insumos e bebidas</li>
-        <li>Caixa e lucro do dia</li>
+        <li>Controle de estoque ilimitado</li>
+        <li>Venda rápida (PDV) com baixa automática</li>
+        <li>Vendas, relatórios e lucro</li>
+        <li>Financeiro e controle de caixa</li>
         <li>Acesso na nuvem, de qualquer aparelho</li>
         </ul><a class="btn big" href="cadastro.html">Começar 7 dias grátis →</a><div class="fine">🎁 7 dias grátis, sem cartão. Depois R$89/mês — sem fidelidade, cancele quando quiser.</div></div><div class="price-card nf"><div class="planbadge">Completo</div><div class="plan">Gestão + Nota Fiscal</div><div class="promo" style="visibility:hidden">.</div><div class="val">R$149<small>/mês</small></div><ul>
-        <li>Cardápio e produtos ilimitados</li>
-        <li>Venda rápida no balcão</li>
-        <li>Estoque de insumos e bebidas</li>
-        <li>Caixa e lucro do dia</li>
+        <li>Controle de estoque ilimitado</li>
+        <li>Venda rápida (PDV) com baixa automática</li>
+        <li>Vendas, relatórios e lucro</li>
+        <li>Financeiro e controle de caixa</li>
         <li>Acesso na nuvem, de qualquer aparelho</li>
         <li><b>Emissão de NFC-e (cupom fiscal)</b></li>
         <li><b>Emissão de NFS-e (nota de serviço)</b></li>
@@ -220,11 +213,11 @@
   <div class="wrap">
     <div class="sec-head"><div class="kick">Dúvidas</div><h2>Perguntas frequentes</h2></div>
     <div class="faq">
+      <details><summary>Serve pro meu tipo de negócio?</summary><p>O JL Gestão atende loja de roupas, acessórios, lanchonete, distribuidora e outros comércios. Escolha seu segmento acima pra ver os recursos com a cara do seu ramo.</p></details>
       <details><summary>Funciona no celular?</summary><p>Sim. É na nuvem e abre no celular, tablet ou computador — você acessa de onde estiver.</p></details>
-      <details><summary>Meus dados ficam salvos? Tem backup?</summary><p>Sim, tudo que você registra é salvo automaticamente na nuvem, com segurança e separado por conta. Se trocar de aparelho, é só entrar de novo — seus dados continuam lá.</p></details>
-      <details><summary>Quantas pessoas podem acessar?</summary><p>Você (dono) cria os logins da sua equipe e escolhe o que cada um pode ver e fazer (vendas, estoque, caixa, financeiro...). Todos podem usar ao mesmo tempo.</p></details>
-      <details><summary>Funciona sem internet?</summary><p>O sistema é na nuvem, então precisa de internet pra funcionar — é assim que seus dados ficam salvos e você acessa de qualquer aparelho.</p></details>
-      <details><summary>Serve pra hamburgueria, açaí, pastelaria?</summary><p>Sim! Funciona pra qualquer lanchonete ou food — você cadastra seu cardápio do seu jeito.</p></details>
+      <details><summary>Meus dados ficam salvos? Tem backup?</summary><p>Sim, tudo que você registra é salvo automaticamente na nuvem, com segurança e separado por conta. Trocou de aparelho, é só entrar de novo.</p></details>
+      <details><summary>Quantas pessoas podem acessar?</summary><p>Você (dono) cria os logins da equipe e escolhe o que cada um pode ver e fazer. Todos podem usar ao mesmo tempo.</p></details>
+      <details><summary>Funciona sem internet?</summary><p>O sistema é na nuvem, então precisa de internet — é assim que seus dados ficam salvos e você acessa de qualquer aparelho.</p></details>
       <details><summary>Preciso emitir nota fiscal?</summary><p><b>MEI e muitos pequenos negócios não são obrigados</b> a emitir nota pro consumidor final — por isso este plano funciona 100% sem nota, do jeitinho que a maioria precisa.</p></details>
       <details><summary>Preciso de fidelidade?</summary><p>Não. É mensal, sem fidelidade — você cancela quando quiser.</p></details>
     </div>
@@ -233,7 +226,7 @@
 
 <section class="final">
   <div class="wrap">
-    <h2>Organize sua lanchonete hoje</h2>
+    <h2>Organize seu negócio hoje</h2>
     <p>Pare de perder tempo com planilha e caderno. Teste 7 dias grátis, sem cartão.</p>
     <a class="btn gold big" href="cadastro.html">Começar 7 dias grátis →</a>
   </div>
@@ -241,11 +234,11 @@
 
 <footer>
   <div class="wrap">
-    <div class="logo">🍔 JL GESTÃO</div>
-    <div>Dúvidas? <a class="wa" href="https://wa.me/5565993439523?text=Ol%C3%A1%21%20Tenho%20uma%20lanchonete%20e%20quero%20testar%20o%20JL%20Gest%C3%A3o%20gr%C3%A1tis%20por%207%20dias.">WhatsApp (65) 99343-9523</a></div>
+    <div class="logo">🧩 JL GESTÃO</div>
+    <div>Dúvidas? <a class="wa" href="https://wa.me/5565993439523?text=Ol%C3%A1%21%20Vi%20o%20site%20do%20JL%20Gest%C3%A3o%20e%20quero%20saber%20mais%20sobre%20o%20sistema.">WhatsApp (65) 99343-9523</a></div>
     <div class="legal">JL Soluções Inteligentes Ltda · CNPJ 69.061.744/0001-12 · Várzea Grande/MT<br>© 2026 JL Gestão — Sistema de gestão para o seu negócio. Todos os direitos reservados.</div>
   </div>
 </footer>
-<a class="wafloat" href="https://wa.me/5565993439523?text=Ol%C3%A1%21%20Tenho%20uma%20lanchonete%20e%20quero%20testar%20o%20JL%20Gest%C3%A3o%20gr%C3%A1tis%20por%207%20dias." target="_blank" rel="noopener" aria-label="Falar no WhatsApp" title="Falar no WhatsApp"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M16 3C9.4 3 4 8.4 4 15c0 2.1.6 4.1 1.6 5.9L4 29l8.3-1.6c1.7.9 3.6 1.4 5.7 1.4 6.6 0 12-5.4 12-12S22.6 3 16 3zm0 21.8c-1.8 0-3.5-.5-5-1.4l-.4-.2-4.9 1 1-4.8-.2-.4c-1-1.6-1.5-3.4-1.5-5.3C5 9.5 9.9 4.6 16 4.6S27 9.5 27 15.6 22.1 24.8 16 24.8zm5.5-6.9c-.3-.2-1.8-.9-2.1-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7.1c-.3-.2-1.3-.5-2.5-1.5-.9-.8-1.5-1.8-1.7-2.1s0-.5.1-.7l.5-.6c.2-.2.2-.3.3-.6s.1-.4 0-.6-.7-1.7-1-2.3c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.6c.2.2 2.4 3.7 5.9 5.1.8.3 1.5.5 2 .7.8.3 1.6.2 2.2.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.1-.1-.3-.2-.6-.3z"/></svg><span class="wafloat-txt">Falar no WhatsApp</span></a>
+<a class="wafloat" href="https://wa.me/5565993439523?text=Ol%C3%A1%21%20Vi%20o%20site%20do%20JL%20Gest%C3%A3o%20e%20quero%20saber%20mais%20sobre%20o%20sistema." target="_blank" rel="noopener" aria-label="Falar no WhatsApp" title="Falar no WhatsApp"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M16 3C9.4 3 4 8.4 4 15c0 2.1.6 4.1 1.6 5.9L4 29l8.3-1.6c1.7.9 3.6 1.4 5.7 1.4 6.6 0 12-5.4 12-12S22.6 3 16 3zm0 21.8c-1.8 0-3.5-.5-5-1.4l-.4-.2-4.9 1 1-4.8-.2-.4c-1-1.6-1.5-3.4-1.5-5.3C5 9.5 9.9 4.6 16 4.6S27 9.5 27 15.6 22.1 24.8 16 24.8zm5.5-6.9c-.3-.2-1.8-.9-2.1-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7.1c-.3-.2-1.3-.5-2.5-1.5-.9-.8-1.5-1.8-1.7-2.1s0-.5.1-.7l.5-.6c.2-.2.2-.3.3-.6s.1-.4 0-.6-.7-1.7-1-2.3c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.6c.2.2 2.4 3.7 5.9 5.1.8.3 1.5.5 2 .7.8.3 1.6.2 2.2.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.1-.1-.3-.2-.6-.3z"/></svg><span class="wafloat-txt">Falar no WhatsApp</span></a>
 </body>
 </html>

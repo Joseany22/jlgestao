@@ -123,9 +123,10 @@
   .price-card.nf{border:2px solid var(--gold)}
   .price-card .planbadge{position:absolute;top:14px;right:14px;background:linear-gradient(135deg,#caa257,#e8c987);color:#3a2c10;font-weight:800;font-size:11px;padding:4px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.5px}
   @media(max-width:760px){.price-grid{grid-template-columns:1fr}}
-  .wafloat{position:fixed;right:18px;bottom:18px;width:58px;height:58px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(0,0,0,.28);z-index:999;transition:transform .15s}
-  .wafloat:hover{transform:scale(1.08)}
-  .wafloat svg{width:32px;height:32px;fill:#fff}
+  .wafloat{position:fixed;right:18px;bottom:18px;background:#25D366;display:flex;align-items:center;gap:9px;padding:12px 18px;border-radius:999px;box-shadow:0 10px 26px rgba(0,0,0,.28);z-index:999;transition:transform .15s;text-decoration:none;color:#fff;font-weight:700;font-size:14.5px;font-family:'Poppins',sans-serif}
+  .wafloat:hover{transform:scale(1.05)}
+  .wafloat svg{width:24px;height:24px;fill:#fff;flex:none}
+  @media(max-width:560px){.wafloat{padding:0;width:56px;height:56px;justify-content:center;border-radius:50%}.wafloat .wafloat-txt{display:none}.wafloat svg{width:30px;height:30px}}
 </style>
 </head>
 <body>
@@ -200,7 +201,18 @@
         <li>Acesso na nuvem, de qualquer aparelho</li>
         <li><b>Emissão de NFC-e (cupom fiscal)</b></li>
         <li><b>Emissão de NFS-e (nota de serviço)</b></li>
-        </ul><a class="btn gold big" href="https://wa.me/5565993439523?text=Quero%20o%20plano%20Gest%C3%A3o%20%2B%20Nota%20Fiscal%20(NFC-e%2FNFS-e)">Quero com nota fiscal →</a><div class="fine">Tudo do plano Gestão + emissão de NFC-e e NFS-e. Ativação com seu certificado digital — fale com a gente que a gente configura pra você.</div></div></div>
+        </ul><a class="btn gold big" href="https://wa.me/5565993439523?text=Ol%C3%A1%21%20Quero%20o%20plano%20Completo%20do%20JL%20Gest%C3%A3o%2C%20com%20nota%20fiscal.">Quero com nota fiscal →</a><div class="fine">Tudo do plano Gestão + emissão de NFC-e e NFS-e. Ativação com seu certificado digital — fale com a gente que a gente configura pra você.</div></div></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head"><div class="kick">Confiança</div><h2>Seus dados seguros</h2></div>
+    <div class="feats">
+      <div class="feat"><div class="ic">☁️</div><h3>Salvo na nuvem</h3><p>Suas vendas e seu estoque ficam salvos na nuvem automaticamente. Perdeu o celular? É só entrar em outro aparelho e continuar de onde parou.</p></div>
+      <div class="feat"><div class="ic">🔒</div><h3>Conexão protegida</h3><p>Acesso com login e senha, e conexão criptografada (HTTPS) do começo ao fim.</p></div>
+      <div class="feat"><div class="ic">🙋</div><h3>Os dados são seus</h3><p>Não vendemos nem compartilhamos suas informações. Se cancelar, você pode pedir uma cópia dos seus dados.</p></div>
+    </div>
   </div>
 </section>
 
@@ -209,7 +221,9 @@
     <div class="sec-head"><div class="kick">Dúvidas</div><h2>Perguntas frequentes</h2></div>
     <div class="faq">
       <details><summary>Funciona no celular?</summary><p>Sim. É na nuvem e abre no celular, tablet ou computador — você acessa de onde estiver.</p></details>
-      <details><summary>Meus dados ficam salvos?</summary><p>Sim, tudo fica salvo no servidor com segurança e separado por conta. Se trocar de aparelho, é só entrar de novo.</p></details>
+      <details><summary>Meus dados ficam salvos? Tem backup?</summary><p>Sim, tudo que você registra é salvo automaticamente na nuvem, com segurança e separado por conta. Se trocar de aparelho, é só entrar de novo — seus dados continuam lá.</p></details>
+      <details><summary>Quantas pessoas podem acessar?</summary><p>Você (dono) cria os logins da sua equipe e escolhe o que cada um pode ver e fazer (vendas, estoque, caixa, financeiro...). Todos podem usar ao mesmo tempo.</p></details>
+      <details><summary>Funciona sem internet?</summary><p>O sistema é na nuvem, então precisa de internet pra funcionar — é assim que seus dados ficam salvos e você acessa de qualquer aparelho.</p></details>
       <details><summary>Serve pra bijuteria, semijoia e presentes?</summary><p>Sim! Funciona pra qualquer loja de acessórios — cada modelo e variação tem seu estoque próprio.</p></details>
       <details><summary>Preciso emitir nota fiscal?</summary><p><b>MEI e muitos pequenos negócios não são obrigados</b> a emitir nota pro consumidor final — por isso este plano funciona 100% sem nota, do jeitinho que a maioria precisa.</p></details>
       <details><summary>Preciso de fidelidade?</summary><p>Não. É mensal, sem fidelidade — você cancela quando quiser.</p></details>
@@ -228,10 +242,10 @@
 <footer>
   <div class="wrap">
     <div class="logo">👜 JL GESTÃO</div>
-    <div>Dúvidas? <a class="wa" href="https://wa.me/5565993439523">WhatsApp (65) 99343-9523</a></div>
+    <div>Dúvidas? <a class="wa" href="https://wa.me/5565993439523?text=Ol%C3%A1%21%20Tenho%20uma%20loja%20de%20acess%C3%B3rios%20e%20quero%20testar%20o%20JL%20Gest%C3%A3o%20gr%C3%A1tis%20por%207%20dias.">WhatsApp (65) 99343-9523</a></div>
     <div class="legal">JL Soluções Inteligentes Ltda · CNPJ 69.061.744/0001-12 · Várzea Grande/MT<br>© 2026 JL Gestão — Sistema de gestão para o seu negócio. Todos os direitos reservados.</div>
   </div>
 </footer>
-<a class="wafloat" href="https://wa.me/5565993439523?text=Ol%C3%A1!%20Vim%20pelo%20site%20do%20JL%20Gest%C3%A3o%20e%20quero%20saber%20mais." target="_blank" rel="noopener" aria-label="Falar no WhatsApp"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M16 3C9.4 3 4 8.4 4 15c0 2.1.6 4.1 1.6 5.9L4 29l8.3-1.6c1.7.9 3.6 1.4 5.7 1.4 6.6 0 12-5.4 12-12S22.6 3 16 3zm0 21.8c-1.8 0-3.5-.5-5-1.4l-.4-.2-4.9 1 1-4.8-.2-.4c-1-1.6-1.5-3.4-1.5-5.3C5 9.5 9.9 4.6 16 4.6S27 9.5 27 15.6 22.1 24.8 16 24.8zm5.5-6.9c-.3-.2-1.8-.9-2.1-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7.1c-.3-.2-1.3-.5-2.5-1.5-.9-.8-1.5-1.8-1.7-2.1s0-.5.1-.7l.5-.6c.2-.2.2-.3.3-.6s.1-.4 0-.6-.7-1.7-1-2.3c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.6c.2.2 2.4 3.7 5.9 5.1.8.3 1.5.5 2 .7.8.3 1.6.2 2.2.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.1-.1-.3-.2-.6-.3z"/></svg></a>
+<a class="wafloat" href="https://wa.me/5565993439523?text=Ol%C3%A1%21%20Tenho%20uma%20loja%20de%20acess%C3%B3rios%20e%20quero%20testar%20o%20JL%20Gest%C3%A3o%20gr%C3%A1tis%20por%207%20dias." target="_blank" rel="noopener" aria-label="Falar no WhatsApp" title="Falar no WhatsApp"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M16 3C9.4 3 4 8.4 4 15c0 2.1.6 4.1 1.6 5.9L4 29l8.3-1.6c1.7.9 3.6 1.4 5.7 1.4 6.6 0 12-5.4 12-12S22.6 3 16 3zm0 21.8c-1.8 0-3.5-.5-5-1.4l-.4-.2-4.9 1 1-4.8-.2-.4c-1-1.6-1.5-3.4-1.5-5.3C5 9.5 9.9 4.6 16 4.6S27 9.5 27 15.6 22.1 24.8 16 24.8zm5.5-6.9c-.3-.2-1.8-.9-2.1-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7.1c-.3-.2-1.3-.5-2.5-1.5-.9-.8-1.5-1.8-1.7-2.1s0-.5.1-.7l.5-.6c.2-.2.2-.3.3-.6s.1-.4 0-.6-.7-1.7-1-2.3c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.6c.2.2 2.4 3.7 5.9 5.1.8.3 1.5.5 2 .7.8.3 1.6.2 2.2.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.1-.1-.3-.2-.6-.3z"/></svg><span class="wafloat-txt">Falar no WhatsApp</span></a>
 </body>
 </html>
