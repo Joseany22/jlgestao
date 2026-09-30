@@ -122,7 +122,7 @@ async function criar(){
     if(e4) throw e4;
     // cria o membro "dono" (acesso total) — base do multiusuário
     try{
-      await sb.from('loja_membros').insert({loja_id:lojaNova.id,user_id:uid,email,nome:'Dono',papel:'dono',permissoes:{painel:true,estoque:true,venda:true,vendas:true,entregas:true,financeiro:true},ativo:true});
+      await sb.from('loja_membros').insert({loja_id:lojaNova.id,user_id:uid,email,nome:'Dono',papel:'dono',permissoes:{painel:true,estoque:true,venda:true,vendas:true,entregas:true,caixa:true,financeiro:true},ativo:true});
     }catch(_){/* painel tem fallback pra dono sem membro */}
     msg('Loja criada! Entrando no painel...','ok');
     setTimeout(()=>location.href='painel.html',700);

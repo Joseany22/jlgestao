@@ -127,6 +127,7 @@
     <div class="panel">
       <div class="toolbar">
         <input class="search" id="qEstoque" placeholder="🔎 Buscar por nome, cor, tamanho..." oninput="renderEstoque()">
+        <button class="btn ghost" onclick="abrirImportXml()">📄 Importar XML da NF-e</button>
         <button class="btn primary" onclick="openProduct()">+ Novo produto</button>
       </div>
       <div id="estFiltroInfo" class="muted" style="margin-bottom:10px"></div>
@@ -141,8 +142,10 @@
     <div class="pdv">
       <div class="panel">
         <div class="toolbar">
-          <input class="search" id="qPdv" placeholder="🔎 Buscar produto para adicionar..." oninput="renderPdvBusca()">
+          <input class="search" id="qPdv" placeholder="🔎 Bipe o código de barras ou busque pelo nome..." oninput="renderPdvBusca()" onkeydown="pdvKey(event)">
+          <button class="btn ghost sm" id="btnScan" onclick="abrirScanner()" style="display:none">📷 Escanear</button>
         </div>
+        <div id="scanBox" style="display:none;margin-bottom:10px"><video id="scanVideo" playsinline style="width:100%;max-height:240px;border-radius:12px;background:#000"></video><div style="text-align:center;margin-top:6px"><button class="btn ghost sm" onclick="fecharScanner()">Fechar câmera</button></div></div>
         <div id="pdvBusca"></div>
       </div>
       <div class="cart">
@@ -307,7 +310,7 @@
       </div>
       <div class="grid2">
         <div class="field"><label>Estoque mínimo (alerta)</label><input id="pMin" type="number" step="1" min="0" placeholder="Ex: 2"></div>
-        <div class="field"><label>Código / SKU (opcional)</label><input id="pSku" placeholder="Opcional"></div>
+        <div class="field"><label>Código de barras / SKU</label><input id="pSku" placeholder="Bipe aqui ou digite o código" onkeydown="if(event.key==='Enter')event.preventDefault()"></div>
       </div>
       <div id="prodFiscalBox" style="border-top:1px solid var(--line);margin:6px 0 12px;padding-top:12px">
         <div style="font-weight:700;font-size:13px;margin-bottom:2px">Dados fiscais <span class="muted" style="font-weight:400">(pra nota fiscal — opcional agora)</span></div>
@@ -356,6 +359,27 @@
       <div class="err" id="cpErr"></div>
     </div>
     <footer><div style="flex:1"></div><button class="btn ghost" onclick="closeModal('compraOverlay')">Cancelar</button><button class="btn primary" onclick="saveCompra()">Salvar</button></footer>
+  </div>
+</div>
+
+<!-- Modal importar XML da NF-e -->
+<div class="overlay" id="xmlOverlay">
+  <div class="modal" style="max-width:840px">
+    <header><h3>📄 Importar XML da NF-e</h3><button class="x" onclick="closeModal('xmlOverlay')">×</button></header>
+    <div class="body">
+      <div id="xmlStep1">
+        <p class="muted" style="font-size:13.5px;margin-bottom:12px">Selecione o arquivo <b>XML</b> da nota fiscal do seu fornecedor. O sistema lê os produtos, quantidades e custos automaticamente. <br><span style="font-size:12.5px">Dica: é o arquivo <b>.xml</b> da nota — não funciona com o DANFE em PDF.</span></p>
+        <input type="file" id="xmlFile" accept=".xml,text/xml,application/xml" onchange="lerXml(event)">
+        <div class="err" id="xmlErr"></div>
+      </div>
+      <div id="xmlStep2" style="display:none">
+        <div id="xmlInfo" class="muted" style="font-size:13px;margin-bottom:10px"></div>
+        <div class="tablewrap" style="max-height:52vh;overflow:auto"><table id="xmlTab"></table></div>
+        <p class="muted" style="font-size:12.5px;margin-top:10px">Para cada item: <b>vincule</b> a um produto que já existe (soma no estoque e atualiza o custo) ou deixe em <b>Criar novo produto</b>. Produtos novos entram com <b>preço de venda R$ 0</b> — ajuste depois no estoque. Desmarque itens que não quer importar.</p>
+        <div class="err" id="xmlErr2"></div>
+      </div>
+    </div>
+    <footer><div style="flex:1"></div><button class="btn ghost" onclick="closeModal('xmlOverlay')">Cancelar</button><button class="btn primary" id="xmlBtnImportar" style="display:none" onclick="importarXml()">Dar entrada no estoque</button></footer>
   </div>
 </div>
 
@@ -589,6 +613,35 @@ function addCart(id){
   if(it){ if(it.qty>=disp){flashErr('Sem estoque suficiente de '+p.nome);return;} it.qty++; }
   else{ if(disp<1){flashErr('Sem estoque de '+p.nome);return;} cart.push({id:p.id,nome:p.nome,tamanho:p.tamanho,cor:p.cor,preco:Number(p.preco)||0,custo:Number(p.custo)||0,qty:1}); }
   renderCart();renderPdvBusca();
+}
+/* ===== código de barras ===== */
+function addPorCodigo(code){
+  code=(code||'').trim(); if(!code)return false;
+  var p=db.products.find(x=>(x.sku||'').toLowerCase()===code.toLowerCase());
+  if(!p){
+    var q=code.toLowerCase();
+    var res=db.products.filter(x=>(Number(x.estoque)||0)>0 && (x.nome+' '+(x.cor||'')+' '+(x.tamanho||'')+' '+(x.sku||'')).toLowerCase().includes(q));
+    if(res.length===1)p=res[0];
+  }
+  if(p){ addCart(p.id); $('qPdv').value=''; renderPdvBusca(); toastOk('✅ '+p.nome+' adicionado'); return true; }
+  flashErr('Código não encontrado: '+code); return false;
+}
+function pdvKey(e){ if(e.key==='Enter'){ e.preventDefault(); addPorCodigo($('qPdv').value); } }
+let _scanStream=null,_scanTimer=null,_detector=null;
+async function abrirScanner(){
+  if(!('BarcodeDetector' in window)){flashErr('Leitura por câmera não é suportada aqui — use um leitor USB ou digite o código.');return;}
+  try{
+    _detector=_detector||new window.BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf']});
+    _scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const v=$('scanVideo');v.srcObject=_scanStream;await v.play();
+    $('scanBox').style.display='block';
+    _scanTimer=setInterval(async()=>{try{const codes=await _detector.detect(v);if(codes&&codes.length){if(addPorCodigo(codes[0].rawValue))fecharScanner();}}catch(_){}} ,600);
+  }catch(err){flashErr('Não consegui abrir a câmera: '+(err.message||err));}
+}
+function fecharScanner(){
+  if(_scanTimer){clearInterval(_scanTimer);_scanTimer=null;}
+  if(_scanStream){_scanStream.getTracks().forEach(t=>t.stop());_scanStream=null;}
+  var b=$('scanBox');if(b)b.style.display='none';
 }
 function chQty(id,delta){
   const it=cart.find(c=>c.id===id);if(!it)return;
@@ -916,7 +969,7 @@ async function loadCloud(){
   }
   if(!lojaRow){await sb.auth.signOut();location.href='cadastro.html';return;}
   LOJA=lojaRow;LOJA_ID=LOJA.id;
-  if(PAPEL==='dono')PERMS={painel:true,estoque:true,venda:true,vendas:true,entregas:true,financeiro:true};
+  if(PAPEL==='dono')PERMS={painel:true,estoque:true,venda:true,vendas:true,entregas:true,caixa:true,financeiro:true};
   // Controle de acesso: assinante pago OU dentro do teste grátis de 7 dias
   var TRIAL_DIAS=7;
   var pago = LOJA.ativo===true;
@@ -1001,6 +1054,103 @@ async function delCompra(id){
   await sb.from('loja_compras').delete().eq('id',id);
   await fetchAll();renderFinanceiro();renderEstoque();renderPainel();
 }
+
+/* ====== IMPORTAR XML DA NF-e (entrada de estoque) ====== */
+function abrirImportXml(){
+  $('xmlStep1').style.display='block'; $('xmlStep2').style.display='none'; $('xmlBtnImportar').style.display='none';
+  $('xmlErr').textContent=''; $('xmlErr2').textContent='';
+  var f=$('xmlFile'); if(f)f.value='';
+  window.__xmlItens=null; window.__xmlInfo=null;
+  showModal('xmlOverlay');
+}
+function _xtag(node,name){var el=node.getElementsByTagNameNS('*',name); return (el&&el[0])?el[0].textContent.trim():'';}
+function lerXml(ev){
+  var err=$('xmlErr'); err.textContent='';
+  var file=ev.target.files&&ev.target.files[0]; if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(){
+    try{
+      var doc=new DOMParser().parseFromString(reader.result,'text/xml');
+      if(doc.getElementsByTagName('parsererror').length){err.textContent='Não consegui ler esse arquivo. Confirme que é o XML da NF-e.';return;}
+      var dets=doc.getElementsByTagNameNS('*','det');
+      if(!dets.length){err.textContent='Não encontrei produtos nesse XML. Confirme que é o XML da NF-e (não o DANFE em PDF).';return;}
+      var emit=doc.getElementsByTagNameNS('*','emit')[0];
+      var inf={forn:emit?_xtag(emit,'xNome'):'', nNF:_xtag(doc.documentElement,'nNF')};
+      var itens=[];
+      for(var i=0;i<dets.length;i++){
+        var prod=dets[i].getElementsByTagNameNS('*','prod')[0]; if(!prod)continue;
+        var ean=_xtag(prod,'cEAN'); if(ean.toUpperCase()==='SEM GTIN')ean='';
+        if(!ean){var et=_xtag(prod,'cEANTrib'); if(et.toUpperCase()!=='SEM GTIN')ean=et;}
+        var qCom=parseFloat(_xtag(prod,'qCom').replace(',','.'))||0;
+        var vUn=parseFloat(_xtag(prod,'vUnCom').replace(',','.'))||0;
+        itens.push({cProd:_xtag(prod,'cProd'),ean:ean,xProd:_xtag(prod,'xProd'),ncm:_xtag(prod,'NCM'),cfop:_xtag(prod,'CFOP'),qty:Math.round(qCom),custo:Math.round(vUn*100)/100,usar:true,alvo:''});
+      }
+      if(!itens.length){err.textContent='Não encontrei itens válidos no XML.';return;}
+      itens.forEach(function(it){
+        var m=db.products.find(function(p){return (it.ean&&p.sku&&p.sku===it.ean)||(it.cProd&&p.sku&&p.sku===it.cProd);});
+        if(m)it.alvo=m.id;
+      });
+      window.__xmlItens=itens; window.__xmlInfo=inf;
+      renderXmlPreview();
+    }catch(e){err.textContent='Erro ao ler o XML: '+e.message;}
+  };
+  reader.onerror=function(){err.textContent='Não consegui abrir o arquivo.';};
+  reader.readAsText(file);
+}
+function renderXmlPreview(){
+  $('xmlStep1').style.display='none'; $('xmlStep2').style.display='block'; $('xmlBtnImportar').style.display='inline-block';
+  var inf=window.__xmlInfo||{};
+  $('xmlInfo').innerHTML='Fornecedor: <b>'+esc(inf.forn||'—')+'</b>'+(inf.nNF?(' · NF nº '+esc(inf.nNF)):'')+' · '+window.__xmlItens.length+' item(ns)';
+  var baseOpts='<option value="">➕ Criar novo produto</option>'+db.products.map(function(p){return '<option value="'+p.id+'">'+esc(p.nome)+(p.sku?(' ['+esc(p.sku)+']'):'')+'</option>';}).join('');
+  var h='<thead><tr><th></th><th>Produto na nota</th><th class="center">Qtd</th><th class="right">Custo un.</th><th>Vincular a</th></tr></thead><tbody>';
+  window.__xmlItens.forEach(function(it,i){
+    var opts=baseOpts.replace('value="'+it.alvo+'"','value="'+it.alvo+'" selected');
+    h+='<tr>'+
+      '<td class="center"><input type="checkbox" '+(it.usar?'checked':'')+' onchange="xmlSet('+i+',\'usar\',this.checked)"></td>'+
+      '<td><b>'+esc(it.xProd)+'</b>'+(it.ean?(' <span class="chip">'+esc(it.ean)+'</span>'):'')+'</td>'+
+      '<td class="center"><input type="number" min="0" step="1" value="'+it.qty+'" style="width:66px" onchange="xmlSet('+i+',\'qty\',this.value)"></td>'+
+      '<td class="right"><input type="number" min="0" step="0.01" value="'+it.custo+'" style="width:90px" onchange="xmlSet('+i+',\'custo\',this.value)"></td>'+
+      '<td><select onchange="xmlSet('+i+',\'alvo\',this.value)">'+opts+'</select></td>'+
+    '</tr>';
+  });
+  h+='</tbody>'; $('xmlTab').innerHTML=h;
+}
+function xmlSet(i,k,v){var it=window.__xmlItens[i];if(!it)return;if(k==='qty')v=parseInt(v)||0;if(k==='custo')v=parseFloat(v)||0;it[k]=v;}
+async function importarXml(){
+  var err=$('xmlErr2'); err.style.color='var(--red)'; err.textContent='';
+  var itens=(window.__xmlItens||[]).filter(function(it){return it.usar&&it.qty>0;});
+  if(!itens.length){err.textContent='Marque ao menos um item com quantidade maior que zero.';return;}
+  var btn=$('xmlBtnImportar'); btn.disabled=true; err.style.color='var(--muted)'; err.textContent='Importando...';
+  var inf=window.__xmlInfo||{}; var obs='NF-e'+(inf.nNF?(' '+inf.nNF):'')+(inf.forn?(' · '+inf.forn):'');
+  var criados=0,atualizados=0;
+  try{
+    for(var k=0;k<itens.length;k++){
+      var it=itens[k], pid=it.alvo, prodNome, tam='', cor='';
+      if(pid){
+        var p=db.products.find(function(x){return x.id===pid;}); if(!p)continue;
+        var novo=(Number(p.estoque)||0)+it.qty;
+        var r1=await sb.from('loja_produtos').update({estoque:novo,custo:it.custo}).eq('id',p.id);
+        if(r1.error)throw new Error(r1.error.message);
+        prodNome=p.nome; tam=p.tamanho||''; cor=p.cor||''; atualizados++;
+      }else{
+        var rec={loja_id:LOJA_ID,nome:it.xProd||'Produto sem nome',estoque:it.qty,custo:it.custo,preco:0,sku:(it.ean||it.cProd||null),ncm:(it.ncm||null),cfop:(it.cfop||null),ativo:true};
+        var r2=await sb.from('loja_produtos').insert(rec).select('id').single();
+        if(r2.error)throw new Error(r2.error.message);
+        pid=r2.data.id; prodNome=rec.nome; criados++;
+      }
+      var r3=await sb.from('loja_compras').insert({loja_id:LOJA_ID,data:hojeISO(),produto_id:pid,produto_nome:prodNome,tamanho:tam,cor:cor,qty:it.qty,custo_unit:it.custo,total:Math.round(it.qty*it.custo*100)/100,obs:obs});
+      if(r3.error)throw new Error(r3.error.message);
+    }
+    closeModal('xmlOverlay');
+    await fetchAll(); renderEstoque(); renderPainel(); if(typeof renderFinanceiro==='function')renderFinanceiro();
+    toastOk('✅ Entrada concluída — '+atualizados+' atualizado(s) e '+criados+' novo(s). Ajuste o preço de venda dos produtos novos.');
+  }catch(e){
+    err.style.color='var(--red)'; err.textContent='Erro: '+e.message+'. Parte pode já ter entrado — confira o estoque.';
+    await fetchAll();
+  }
+  btn.disabled=false;
+}
+
 async function saveDespesa(){
   const err=$('dpErr');err.textContent='';
   const desc=$('dpDesc').value.trim();const valor=parseFloat($('dpValor').value);
@@ -1025,13 +1175,15 @@ async function saveSettings(){
 
 /* ====== aba fiscal ====== */
 function setTab(t){
-  ['painel','estoque','venda','vendas','entregas','financeiro','fiscal','usuarios'].forEach(x=>{const el=$('tab-'+x);if(el)el.classList.toggle('hide',x!==t);});
+  if(t!=='venda' && typeof fecharScanner==='function')fecharScanner();
+  ['painel','estoque','venda','vendas','entregas','caixa','financeiro','fiscal','usuarios'].forEach(x=>{const el=$('tab-'+x);if(el)el.classList.toggle('hide',x!==t);});
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
   if(t==='painel')renderPainel();
   if(t==='estoque')renderEstoque();
-  if(t==='venda'){renderPdvBusca();renderCart();}
+  if(t==='venda'){renderPdvBusca();renderCart(); if('BarcodeDetector' in window){var _bs=$('btnScan'); if(_bs)_bs.style.display='';}}
   if(t==='vendas')renderVendas();
   if(t==='entregas')renderEntregas();
+  if(t==='caixa')renderCaixa();
   if(t==='financeiro')renderFinanceiro();
   if(t==='fiscal')renderFiscal();
   if(t==='usuarios')renderEquipe();
@@ -1082,7 +1234,7 @@ openProduct = function(id){
 };
 
 /* ====== MULTIUSUÁRIO: permissões + equipe ====== */
-const MODS=[['painel','📊 Painel (faturamento/lucro)'],['estoque','📦 Estoque'],['venda','🛒 Nova venda (PDV)'],['vendas','🧾 Vendas (histórico)'],['entregas','🛵 Entregas'],['financeiro','💰 Financeiro']];
+const MODS=[['painel','📊 Painel (faturamento/lucro)'],['estoque','📦 Estoque'],['venda','🛒 Nova venda (PDV)'],['vendas','🧾 Vendas (histórico)'],['entregas','🛵 Entregas'],['caixa','💵 Caixa'],['financeiro','💰 Financeiro']];
 function ehDono(){return PAPEL==='dono';}
 function temPlanoNF(){return !!(LOJA && LOJA.plano_nf===true);}
 
@@ -1127,12 +1279,23 @@ function applyPerms(){
     var hostE=document.getElementById('tab-painel');
     if(hostE&&hostE.parentNode)hostE.parentNode.appendChild(secE);
   }
+  // injeta a aba Caixa (uma vez) — visibilidade controlada pela permissão
+  if(!document.querySelector('#tabs button[data-tab="caixa"]')){
+    var navC=document.getElementById('tabs');
+    var bc=document.createElement('button');bc.dataset.tab='caixa';bc.textContent='💵 Caixa';bc.onclick=function(){setTab('caixa');};
+    var afterC=document.querySelector('#tabs button[data-tab="entregas"]')||document.querySelector('#tabs button[data-tab="vendas"]');
+    if(afterC&&afterC.nextSibling)navC.insertBefore(bc,afterC.nextSibling); else navC.appendChild(bc);
+    var secC=document.createElement('section');secC.id='tab-caixa';secC.className='hide';
+    secC.innerHTML='<div id="caixaBox"></div>';
+    var hostC=document.getElementById('tab-painel');
+    if(hostC&&hostC.parentNode)hostC.parentNode.appendChild(secC);
+  }
   // Abas por permissão
   document.querySelectorAll('#tabs button[data-tab]').forEach(function(b){
     var t=b.dataset.tab;
     if(t==='fiscal'){b.style.display=(ehDono()&&temPlanoNF())?'':'none';return;}
     if(t==='usuarios'){return;}
-    if(['painel','estoque','venda','vendas','entregas','financeiro'].indexOf(t)>=0){b.style.display=PERMS[t]?'':'none';}
+    if(['painel','estoque','venda','vendas','entregas','caixa','financeiro'].indexOf(t)>=0){b.style.display=PERMS[t]?'':'none';}
   });
   // Botões do topo (Personalizar/Exportar) só pro dono
   document.querySelectorAll('header.top button').forEach(function(b){
@@ -1168,7 +1331,7 @@ function applyPerms(){
     if(host&&host.parentNode)host.parentNode.appendChild(sec);
   }
   // Primeira aba visível
-  var order=['painel','estoque','venda','vendas','entregas','financeiro'];
+  var order=['painel','estoque','venda','vendas','entregas','caixa','financeiro'];
   var first=ehDono()?'painel':order.find(function(t){return PERMS[t];});
   if(!ehDono() && !first){
     var w=document.querySelector('.wrap');
@@ -1295,6 +1458,75 @@ async function setEntregaStatus(id,st){
   toastOk('✅ '+(st==='saiu'?'Saiu para entrega':st==='entregue'?'Marcada como entregue':'Voltou para pendente'));
 }
 function togglePw(id,btn){var el=$(id);if(!el)return;if(el.type==='password'){el.type='text';btn.textContent='🙈';}else{el.type='password';btn.textContent='👁️';}}
+
+/* ====== CAIXA (abertura / sangria / suprimento / fechamento) ====== */
+function flashErrCx(m){var e=$('cxErr');if(e){e.style.color='var(--red)';e.textContent=m;}else toastOk('❌ '+m);}
+async function renderCaixa(){
+  var box=$('caixaBox'); if(!box)return;
+  box.innerHTML='<div class="panel"><p class="muted">Carregando caixa...</p></div>';
+  var {data:abertos,error}=await sb.from('loja_caixa').select('*').eq('loja_id',LOJA_ID).eq('status','aberto').order('aberto_em',{ascending:false}).limit(1);
+  if(error){box.innerHTML='<div class="panel"><p class="muted">Erro: '+esc(error.message)+'</p></div>';return;}
+  var cx=abertos&&abertos[0];
+  if(!cx){
+    box.innerHTML='<div class="panel"><h3 style="font-size:16px;margin-bottom:6px">💵 Caixa fechado</h3>'+
+      '<p class="muted" style="font-size:13.5px;margin-bottom:14px">Abra o caixa no início do expediente com o dinheiro que está na gaveta (troco inicial).</p>'+
+      '<div style="max-width:280px"><label>Valor de abertura (R$)</label><input id="cxAbertura" type="number" step="0.01" min="0" value="0"></div>'+
+      '<button class="btn primary" style="margin-top:12px" onclick="abrirCaixa()">Abrir caixa</button><div id="cxErr" class="muted" style="margin-top:8px"></div></div>'+
+      '<div id="cxHist"></div>';
+    renderCaixaHist(); return;
+  }
+  var res = await Promise.all([
+    sb.from('loja_caixa_mov').select('*').eq('caixa_id',cx.id).order('criado_em'),
+    sb.from('loja_vendas').select('total,forma_pag,criado_em').eq('loja_id',LOJA_ID).gte('criado_em',cx.aberto_em)
+  ]);
+  var movs=res[0].data||[], vend=res[1].data||[];
+  var supr=movs.filter(m=>m.tipo==='suprimento').reduce((a,m)=>a+Number(m.valor||0),0);
+  var sang=movs.filter(m=>m.tipo==='sangria').reduce((a,m)=>a+Number(m.valor||0),0);
+  var vendDin=vend.filter(v=>v.forma_pag==='Dinheiro').reduce((a,v)=>a+Number(v.total||0),0);
+  var esperado=Number(cx.valor_abertura||0)+vendDin+supr-sang;
+  window.__caixaEsperado=esperado; window.__caixaId=cx.id;
+  var stat=[['Abertura',money(cx.valor_abertura),'var(--brand)'],['Vendas em dinheiro',money(vendDin),'var(--green)'],['Suprimentos',money(supr),'var(--brand)'],['Sangrias','- '+money(sang),'var(--red)'],['Esperado na gaveta',money(esperado),'var(--amber)']];
+  box.innerHTML='<div class="panel"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h3 style="font-size:16px;flex:1;margin:0">💵 Caixa aberto</h3><span class="eqbadge" style="background:rgba(62,207,142,.15);color:var(--green)">Desde '+new Date(cx.aberto_em).toLocaleString('pt-BR')+'</span></div>'+
+    '<div class="kpis" style="margin:14px 0">'+stat.map(function(s){return '<div class="kpi"><div class="bar" style="background:'+s[2]+'"></div><div class="n" style="font-size:18px">'+s[1]+'</div><div class="l">'+s[0]+'</div></div>';}).join('')+'</div>'+
+    '<div class="eqacts"><button class="btn" onclick="movCaixa(\'suprimento\')">➕ Suprimento</button><button class="btn" onclick="movCaixa(\'sangria\')">➖ Sangria</button><button class="btn primary" onclick="fecharCaixa()">Fechar caixa</button></div>'+
+    (movs.length?('<div style="margin-top:14px"><div class="muted" style="font-size:12.5px;font-weight:700;margin-bottom:6px">Movimentos</div>'+movs.map(function(m){return '<div style="display:flex;gap:10px;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)"><span style="color:'+(m.tipo==='sangria'?'var(--red)':'var(--green)')+';font-weight:700;min-width:90px">'+(m.tipo==='sangria'?'Sangria':'Suprimento')+'</span><span style="min-width:80px">'+money(m.valor)+'</span><span class="muted" style="flex:1">'+esc(m.motivo||'')+'</span><span class="muted">'+new Date(m.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'</span></div>';}).join('')+'</div>'):'')+
+    '<div id="cxErr" class="muted" style="margin-top:8px"></div></div>';
+}
+async function renderCaixaHist(){
+  var box=$('cxHist'); if(!box)return;
+  var {data:fech}=await sb.from('loja_caixa').select('*').eq('loja_id',LOJA_ID).eq('status','fechado').order('fechado_em',{ascending:false}).limit(10);
+  if(!fech||!fech.length){box.innerHTML='';return;}
+  box.innerHTML='<div class="panel" style="margin-top:14px"><h3 style="font-size:15px;margin-bottom:10px">Últimos fechamentos</h3><div class="tablewrap"><table><thead><tr><th>Fechado em</th><th class="right">Esperado</th><th class="right">Contado</th><th class="right">Diferença</th></tr></thead><tbody>'+
+    fech.map(function(c){var d=Number(c.diferenca||0);return '<tr><td>'+new Date(c.fechado_em).toLocaleString('pt-BR')+'</td><td class="right">'+money(c.valor_esperado)+'</td><td class="right">'+money(c.valor_informado)+'</td><td class="right" style="color:'+(d===0?'var(--green)':(d<0?'var(--red)':'var(--amber)'))+';font-weight:700">'+money(d)+'</td></tr>';}).join('')+
+    '</tbody></table></div></div>';
+}
+async function abrirCaixa(){
+  var v=parseFloat($('cxAbertura').value)||0;
+  var {error}=await sb.from('loja_caixa').insert({loja_id:LOJA_ID,valor_abertura:v,aberto_por:MEU_EMAIL,status:'aberto'});
+  if(error){flashErrCx('Erro: '+error.message);return;}
+  toastOk('✅ Caixa aberto.'); renderCaixa();
+}
+async function movCaixa(tipo){
+  var label=tipo==='sangria'?'sangria (retirada de dinheiro)':'suprimento (reforço de troco)';
+  var vs=prompt('Valor da '+label+' (R$):'); if(vs===null)return;
+  var v=parseFloat((vs||'').replace(',','.'))||0; if(v<=0){flashErrCx('Informe um valor válido.');return;}
+  var motivo=prompt('Motivo (opcional):')||'';
+  var {error}=await sb.from('loja_caixa_mov').insert({loja_id:LOJA_ID,caixa_id:window.__caixaId,tipo:tipo,valor:v,motivo:motivo,por:MEU_EMAIL});
+  if(error){flashErrCx('Erro: '+error.message);return;}
+  toastOk('✅ '+(tipo==='sangria'?'Sangria':'Suprimento')+' registrado.'); renderCaixa();
+}
+async function fecharCaixa(){
+  var esperado=Number(window.__caixaEsperado||0);
+  var vs=prompt('Fechamento de caixa\n\nQuanto tem de dinheiro na gaveta agora? (R$)\nEsperado pelo sistema: '+money(esperado));
+  if(vs===null)return;
+  var informado=parseFloat((vs||'').replace(',','.'))||0;
+  var dif=informado-esperado;
+  var msg=dif===0?'bateu certinho! 🎉':(dif>0?('sobrou '+money(dif)):('faltou '+money(-dif)));
+  if(!confirm('Conferência do caixa:\n\nEsperado: '+money(esperado)+'\nContado: '+money(informado)+'\nDiferença: '+money(dif)+' ('+msg+')\n\nConfirmar fechamento?'))return;
+  var {error}=await sb.from('loja_caixa').update({status:'fechado',fechado_em:new Date().toISOString(),fechado_por:MEU_EMAIL,valor_informado:informado,valor_esperado:esperado,diferenca:dif}).eq('id',window.__caixaId);
+  if(error){flashErrCx('Erro: '+error.message);return;}
+  toastOk('✅ Caixa fechado — '+msg); renderCaixa();
+}
 
 /* inicia na nuvem */
 loadCloud();
