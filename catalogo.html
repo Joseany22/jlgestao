@@ -220,6 +220,7 @@ function addCart(id){
   const q=(CART[id]||0)+1;
   if(q>maxEst(id)){flash(id);return;}
   CART[id]=q; refreshCtrl(id); atualizaCart();
+  if($('overlay').classList.contains('show'))renderCartItems();
 }
 function menos(id){
   const q=(CART[id]||0)-1;
