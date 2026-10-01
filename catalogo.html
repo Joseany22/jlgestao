@@ -71,8 +71,12 @@
   .ci .cst span{min-width:20px;text-align:center;font-weight:800}
   .sheet .foot{padding:14px 18px 18px;border-top:1px solid var(--line)}
   .sheet .foot label{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 5px;font-weight:600}
-  .sheet .foot input,.sheet .foot textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:11px 12px;border-radius:10px;font-size:14.5px;font-family:inherit}
-  .sheet .foot input:focus,.sheet .foot textarea:focus{outline:none;border-color:var(--brand)}
+  .sheet .foot input,.sheet .foot textarea,.sheet .foot select{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:11px 12px;border-radius:10px;font-size:14.5px;font-family:inherit}
+  .sheet .foot input:focus,.sheet .foot textarea:focus,.sheet .foot select:focus{outline:none;border-color:var(--brand)}
+  #pixBox{margin-top:12px;background:var(--panel2);border:1px dashed var(--green);border-radius:12px;padding:12px}
+  #pixBox .pixlbl{font-size:12.5px;color:var(--muted);margin-bottom:8px;line-height:1.4}
+  #pixBox .pixcode{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:9px;font-size:11.5px;font-family:monospace;word-break:break-all;resize:none}
+  #pixBox .pixcopy{margin-top:8px;width:100%;background:var(--green);color:#06351b;border:none;padding:11px;border-radius:9px;font-weight:800;font-size:13.5px;cursor:pointer}
   .totrow{display:flex;align-items:center;justify-content:space-between;margin:14px 0 4px;font-size:18px;font-weight:800}
   .send{width:100%;margin-top:12px;background:var(--green);color:#06351b;border:none;padding:15px;border-radius:13px;font-weight:800;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px}
   .send:active{transform:scale(.99)}
@@ -103,10 +107,20 @@
     <div class="shead"><h2>Seu pedido</h2><button class="x" onclick="fecharCarrinho()">×</button></div>
     <div class="items" id="cartItems"></div>
     <div class="foot">
-      <label>Seu nome (opcional)</label>
+      <label>Seu nome</label>
       <input id="cliNome" placeholder="Pra loja saber quem é">
+      <label>Seu WhatsApp (pra loja te chamar)</label>
+      <input id="cliTel" placeholder="(65) 99999-9999" inputmode="tel">
       <label>Observação / endereço de entrega (opcional)</label>
       <textarea id="cliObs" rows="2" placeholder="Ex: rua, nº, bairro — ou retirada no local"></textarea>
+      <label>Forma de pagamento</label>
+      <select id="cliPag" onchange="onPagChange()">
+        <option value="PIX">PIX</option>
+        <option value="Dinheiro">Dinheiro</option>
+        <option value="Cartão">Cartão (na entrega)</option>
+        <option value="Combinar com a loja">Combinar com a loja</option>
+      </select>
+      <div id="pixBox" style="display:none"></div>
       <div class="totrow"><span>Total</span><span id="cartTot2">R$ 0,00</span></div>
       <button class="send" onclick="enviarPedido()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.588 5.303l-.999 3.648 3.91-1.026zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.297-.496.099-.199.05-.372-.025-.521-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
@@ -264,6 +278,7 @@ function renderCartItems(){
   });
   $('cartItems').innerHTML=html;
   atualizaCart();
+  onPagChange();
 }
 
 function normZap(z){
@@ -277,23 +292,82 @@ function waDireto(){
   return 'https://wa.me/'+normZap(LOJA.whatsapp)+'?text='+encodeURIComponent(msg);
 }
 
-function enviarPedido(){
+async function enviarPedido(){
   const its=itensCart();
   if(!its.length){abrirCarrinho();return;}
   const zap=normZap(LOJA.whatsapp);
-  if(!zap){alert('Essa loja não cadastrou o WhatsApp. Fale com ela por outro meio.');return;}
   const nome=$('cliNome').value.trim();
+  const tel=$('cliTel').value.trim();
   const obs=$('cliObs').value.trim();
+  const forma=$('cliPag').value;
+  const btn=document.querySelector('.send'); if(btn)btn.disabled=true;
+  // salva o pedido no sistema (pra cair direto no painel da loja)
+  try{
+    await sb.rpc('criar_pedido',{
+      p_slug:getSlug(), p_cliente:nome, p_tel:tel, p_obs:obs, p_forma:forma,
+      p_itens: its.map(i=>({id:i.p.id, qtd:i.q}))
+    });
+  }catch(e){ /* mesmo se falhar, segue pro WhatsApp pra não perder o pedido */ }
+  // monta a mensagem do WhatsApp
   let m='Olá, *'+LOJA.nome+'*! Quero fazer um pedido:\n\n';
   its.forEach(({p,q,pe,sub})=>{
     const varz=variacao(p);
     m+='• '+q+'x '+p.nome+(varz?' ('+varz+')':'')+' — '+brl(sub)+'\n';
   });
   m+='\n*Total: '+brl(totalCart())+'*\n';
+  m+='Pagamento: '+forma+'\n';
   if(nome)m+='\nNome: '+nome;
+  if(tel)m+='\nWhatsApp: '+tel;
   if(obs)m+='\nObs: '+obs;
-  const url='https://wa.me/'+zap+'?text='+encodeURIComponent(m);
-  window.open(url,'_blank');
+  if(zap){ window.open('https://wa.me/'+zap+'?text='+encodeURIComponent(m),'_blank'); }
+  else { alert('Pedido enviado! A loja vai ver no sistema dela. 😊'); }
+  if(btn)btn.disabled=false;
+}
+
+function onPagChange(){
+  const box=$('pixBox'); if(!box)return;
+  const forma=$('cliPag')?$('cliPag').value:'';
+  if(forma!=='PIX'){box.style.display='none';box.innerHTML='';return;}
+  if(LOJA && LOJA.pix_key){
+    const code=buildPix();
+    box.innerHTML='<div class="pixlbl">💚 PIX copia e cola — pague e envie o comprovante pra loja:</div>'+
+      '<textarea class="pixcode" readonly rows="3" onclick="this.select()">'+esc(code)+'</textarea>'+
+      '<button type="button" class="pixcopy" onclick="copiarPix()">📋 Copiar código PIX</button>';
+  } else {
+    box.innerHTML='<div class="pixlbl">💬 A loja vai te passar a chave PIX pelo WhatsApp quando receber o pedido.</div>';
+  }
+  box.style.display='block';
+}
+function copiarPix(){
+  const ta=document.querySelector('#pixBox .pixcode'); if(!ta)return;
+  ta.select();
+  try{ if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(ta.value);} else {document.execCommand('copy');} }catch(_){ try{document.execCommand('copy');}catch(e){} }
+  const b=document.querySelector('#pixBox .pixcopy'); if(b){const o=b.textContent;b.textContent='✅ Copiado!';setTimeout(()=>b.textContent=o,1600);}
+}
+function buildPix(){
+  return pixBRCode({key:LOJA.pix_key, name:LOJA.pix_nome||LOJA.nome, city:LOJA.pix_cidade||LOJA.cidade||'BRASIL', amount:totalCart(), txid:'PEDIDO'});
+}
+function pixClean(s,max){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9 ]/g,'').trim().toUpperCase().slice(0,max);}
+function crc16(str){
+  let crc=0xFFFF;
+  for(let i=0;i<str.length;i++){
+    crc^=str.charCodeAt(i)<<8;
+    for(let j=0;j<8;j++){ crc=(crc&0x8000)?((crc<<1)^0x1021):(crc<<1); crc&=0xFFFF; }
+  }
+  return crc.toString(16).toUpperCase().padStart(4,'0');
+}
+function pixBRCode(o){
+  const amount=Number(o.amount)||0;
+  const name=pixClean(o.name,25)||'LOJA';
+  const city=pixClean(o.city,15)||'BRASIL';
+  const key=String(o.key||'').trim();
+  const f=(id,v)=>id+String(v.length).padStart(2,'0')+v;
+  const mai=f('00','BR.GOV.BCB.PIX')+f('01',key);
+  let p=f('00','01')+f('26',mai)+f('52','0000')+f('53','986');
+  if(amount>0)p+=f('54',amount.toFixed(2));
+  const txid=(o.txid||'***').replace(/[^A-Za-z0-9]/g,'').slice(0,25)||'***';
+  p+=f('58','BR')+f('59',name)+f('60',city)+f('62',f('05',txid))+'6304';
+  return p+crc16(p);
 }
 
 function filtrar(){

@@ -408,7 +408,13 @@
       <div class="field"><label>Nome da loja</label><input id="sName"></div>
       <div class="field"><label>Descrição / subtítulo</label><input id="sSub"></div>
       <div class="field"><label>Cor da marca</label><input id="sColor" type="color" style="height:44px;padding:4px"></div>
+      <div class="field"><label>WhatsApp (recebe os pedidos da vitrine)</label><input id="sWhats" placeholder="(65) 99999-9999" inputmode="tel"></div>
       <p class="muted" style="font-size:12.5px">Assim você usa como sua própria marca, ou vende para cada loja com a identidade dela.</p>
+      <div style="border-top:1px solid var(--line);margin:14px 0 4px;padding-top:12px"><b style="font-size:13.5px">💚 PIX (pra vitrine gerar o "copia e cola")</b></div>
+      <div class="field"><label>Chave PIX</label><input id="sPixKey" placeholder="CPF/CNPJ, e-mail, telefone ou chave aleatória"></div>
+      <div class="field"><label>Nome do recebedor (como no banco)</label><input id="sPixNome" placeholder="Ex: Maria da Silva"></div>
+      <div class="field"><label>Cidade do recebedor</label><input id="sPixCidade" placeholder="Ex: Varzea Grande"></div>
+      <p class="muted" style="font-size:12px">Preencha pra que a vitrine mostre o PIX pronto pro cliente copiar e pagar. Deixe em branco se preferir combinar o pagamento manualmente.</p>
     </div>
     <footer><div style="flex:1"></div><button class="btn ghost" onclick="closeModal('setOverlay')">Cancelar</button><button class="btn primary" onclick="saveSettings()">Salvar</button></footer>
   </div>
@@ -461,7 +467,12 @@ function applyBrand(){
   $('footBrand').textContent=db.brand.name;
   document.title=db.brand.name+' — Controle de Roupas';
 }
-function openSettings(){$('sName').value=db.brand.name;$('sSub').value=db.brand.sub;$('sColor').value=db.brand.color;showModal('setOverlay');}
+function openSettings(){$('sName').value=db.brand.name;$('sSub').value=db.brand.sub;$('sColor').value=db.brand.color;
+  if($('sWhats'))$('sWhats').value=(LOJA&&LOJA.whatsapp)||'';
+  if($('sPixKey'))$('sPixKey').value=(LOJA&&LOJA.pix_key)||'';
+  if($('sPixNome'))$('sPixNome').value=(LOJA&&LOJA.pix_nome)||'';
+  if($('sPixCidade'))$('sPixCidade').value=(LOJA&&LOJA.pix_cidade)||'';
+  showModal('setOverlay');}
 function saveSettings(){
   db.brand.name=$('sName').value.trim()||'Minha Loja';
   db.brand.sub=$('sSub').value.trim()||'Controle de estoque, vendas e financeiro';
@@ -1167,8 +1178,13 @@ async function delDespesa(id){
 }
 async function saveSettings(){
   const nome=$('sName').value.trim()||'Minha Loja';const sub=$('sSub').value.trim();const color=$('sColor').value||'#7c5cff';
-  const {error}=await sb.from('loja_lojas').update({nome,segmento:sub,cor:color}).eq('id',LOJA_ID);
+  const whats=$('sWhats')?$('sWhats').value.trim():'';
+  const pixKey=$('sPixKey')?$('sPixKey').value.trim():'';
+  const pixNome=$('sPixNome')?$('sPixNome').value.trim():'';
+  const pixCidade=$('sPixCidade')?$('sPixCidade').value.trim():'';
+  const {error}=await sb.from('loja_lojas').update({nome,segmento:sub,cor:color,whatsapp:whats,pix_key:pixKey,pix_nome:pixNome,pix_cidade:pixCidade}).eq('id',LOJA_ID);
   if(error){alert('Erro: '+error.message);return;}
+  if(LOJA){LOJA.whatsapp=whats;LOJA.pix_key=pixKey;LOJA.pix_nome=pixNome;LOJA.pix_cidade=pixCidade;}
   db.brand={name:nome,sub:sub||'Controle de estoque, vendas e financeiro',color};
   applyBrand();closeModal('setOverlay');injectHeader();renderPainel();
 }
@@ -1176,8 +1192,9 @@ async function saveSettings(){
 /* ====== aba fiscal ====== */
 function setTab(t){
   if(t!=='venda' && typeof fecharScanner==='function')fecharScanner();
-  ['painel','estoque','venda','vendas','entregas','caixa','financeiro','fiscal','usuarios'].forEach(x=>{const el=$('tab-'+x);if(el)el.classList.toggle('hide',x!==t);});
+  ['painel','estoque','venda','vendas','pedidos','entregas','caixa','financeiro','fiscal','usuarios'].forEach(x=>{const el=$('tab-'+x);if(el)el.classList.toggle('hide',x!==t);});
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  if(t==='pedidos')renderPedidos();
   if(t==='painel')renderPainel();
   if(t==='estoque')renderEstoque();
   if(t==='venda'){renderPdvBusca();renderCart(); if('BarcodeDetector' in window){var _bs=$('btnScan'); if(_bs)_bs.style.display='';}}
@@ -1188,6 +1205,135 @@ function setTab(t){
   if(t==='fiscal')renderFiscal();
   if(t==='usuarios')renderEquipe();
 }
+/* ============ PEDIDOS (vitrine → painel) ============ */
+function injectPedStyles(){
+  if(document.getElementById('pedStyles'))return;
+  var s=document.createElement('style');s.id='pedStyles';
+  s.textContent='.pedcard{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}'+
+    '.pedtop{display:flex;align-items:center;gap:8px;margin-bottom:8px}'+
+    '.pedst{color:#fff;font-size:11.5px;font-weight:800;padding:2px 10px;border-radius:20px}'+
+    '.pedpago{background:rgba(62,207,142,.15);color:var(--green);font-size:11.5px;font-weight:800;padding:2px 9px;border-radius:20px}'+
+    '.pedcli{font-size:14.5px;margin-bottom:8px}'+
+    '.peditens{font-size:13.5px;line-height:1.7;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px 0;margin-bottom:8px}'+
+    '.pedobs{font-size:13px;color:var(--muted);margin-bottom:8px}'+
+    '.pedfoot{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:10px;gap:10px}'+
+    '.pedacts{display:flex;gap:8px;flex-wrap:wrap}';
+  document.head.appendChild(s);
+}
+function renderVitrineBox(){
+  var box=$('vitrineBox'); if(!box||!LOJA)return;
+  var url='https://jlgestao.pages.dev/catalogo.html?loja='+encodeURIComponent(LOJA.slug||'');
+  var qr='https://api.qrserver.com/v1/create-qr-code/?size=180x180&data='+encodeURIComponent(url);
+  box.innerHTML='<h3 style="font-size:15px;margin-bottom:8px">🛍️ Sua vitrine online</h3>'+
+    '<p class="muted" style="font-size:13px;margin-bottom:10px">Divulgue este link (ou o QR code) pros clientes comprarem. Os pedidos caem aqui embaixo.</p>'+
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">'+
+      '<img src="'+qr+'" alt="QR code da vitrine" style="width:120px;height:120px;border-radius:10px;background:#fff;padding:4px" onerror="this.style.display=\'none\'">'+
+      '<div style="flex:1;min-width:220px">'+
+        '<input id="vitrineUrl" readonly value="'+esc(url)+'" onclick="this.select()" style="width:100%;background:var(--panel);border:1px solid var(--line);color:var(--ink);padding:10px;border-radius:9px;font-size:12.5px">'+
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+
+          '<button class="btn primary sm" onclick="copiarVitrine()">📋 Copiar link</button>'+
+          '<a class="btn ghost sm" target="_blank" href="'+url+'">👁️ Abrir vitrine</a>'+
+          '<a class="btn ghost sm" target="_blank" href="https://wa.me/?text='+encodeURIComponent('Confira nossa loja online: '+url)+'">💬 Compartilhar</a>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+}
+function copiarVitrine(){var el=$('vitrineUrl');if(!el)return;el.select();try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(el.value);}else{document.execCommand('copy');}}catch(e){try{document.execCommand('copy');}catch(_){}}if(typeof toastOk==='function')toastOk('Link da vitrine copiado!');}
+
+async function renderPedidos(){
+  injectPedStyles();
+  renderVitrineBox();
+  var box=$('pedidosList'); if(!box)return;
+  box.innerHTML='<p class="muted">Carregando pedidos...</p>';
+  var filtro=$('pedFiltro')?$('pedFiltro').value:'ativos';
+  var {data,error}=await sb.from('loja_pedidos').select('*').eq('loja_id',LOJA_ID).order('criado_em',{ascending:false});
+  if(error){box.innerHTML='<p class="muted">Erro ao carregar: '+esc(error.message)+'</p>';return;}
+  var todos=data||[];
+  atualizaPedBadge(todos);
+  var lista=todos;
+  if(filtro==='ativos')lista=todos.filter(function(p){return p.status==='Novo';});
+  else if(filtro==='Novo'||filtro==='Concluído'||filtro==='Cancelado')lista=todos.filter(function(p){return p.status===filtro;});
+  if(!lista.length){box.innerHTML='<div class="empty" style="padding:22px">Nenhum pedido por aqui ainda. Divulgue sua vitrine! 🛍️</div>';return;}
+  box.innerHTML=lista.map(cardPedido).join('');
+}
+function waTelDe(tel){var d=(tel||'').replace(/\D/g,'');if(!d)return '';return d.length<=11?'55'+d:d;}
+function cardPedido(p){
+  var itens=(p.itens||[]).map(function(i){var v=[i.tamanho,i.cor].filter(Boolean).join(' ');return '<div>'+(i.qty)+'x '+esc(i.nome)+(v?' <span class="muted">('+esc(v)+')</span>':'')+' — '+money((Number(i.preco)||0)*(Number(i.qty)||0))+'</div>';}).join('');
+  var dt=p.criado_em?new Date(p.criado_em):null;
+  var quando=dt?(dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})):'';
+  var stColor=p.status==='Concluído'?'var(--green)':(p.status==='Cancelado'?'var(--red)':'var(--brand)');
+  var waTel=waTelDe(p.cliente_tel);
+  var acoes='';
+  if(p.status==='Novo'){
+    acoes='<div class="pedacts">'+
+      '<button class="btn primary sm" onclick="concluirPedido(\''+p.id+'\')">✅ Concluir venda (baixa estoque)</button>'+
+      (waTel?'<a class="btn ghost sm" target="_blank" href="https://wa.me/'+waTel+'">💬 Chamar cliente</a>':'')+
+      '<button class="btn ghost sm" onclick="togglePagoPedido(\''+p.id+'\','+(p.pago?'false':'true')+')">'+(p.pago?'↩️ Desmarcar pago':'💰 Marcar pago')+'</button>'+
+      '<button class="btn ghost sm" onclick="cancelarPedido(\''+p.id+'\')">✖ Cancelar</button>'+
+      '</div>';
+  } else if(waTel){
+    acoes='<div class="pedacts"><a class="btn ghost sm" target="_blank" href="https://wa.me/'+waTel+'">💬 Chamar cliente</a></div>';
+  }
+  return '<div class="pedcard">'+
+    '<div class="pedtop"><span class="pedst" style="background:'+stColor+'">'+esc(p.status||'Novo')+'</span>'+
+    (p.pago?'<span class="pedpago">💰 Pago</span>':'')+
+    '<span class="muted" style="margin-left:auto;font-size:12px">'+quando+'</span></div>'+
+    '<div class="pedcli"><b>'+esc(p.cliente_nome||'Cliente')+'</b>'+(p.cliente_tel?' · '+esc(p.cliente_tel):'')+'</div>'+
+    '<div class="peditens">'+itens+'</div>'+
+    (p.obs?'<div class="pedobs">📝 '+esc(p.obs)+'</div>':'')+
+    '<div class="pedfoot"><span class="muted">'+(p.forma_pgto?('Pagamento: '+esc(p.forma_pgto)):'')+'</span><b>Total: '+money(Number(p.total)||0)+'</b></div>'+
+    acoes+'</div>';
+}
+async function concluirPedido(id){
+  var {data:peds,error:e0}=await sb.from('loja_pedidos').select('*').eq('id',id).limit(1);
+  if(e0||!peds||!peds.length){alert('Pedido não encontrado.');return;}
+  var p=peds[0];
+  if(p.status!=='Novo'){alert('Esse pedido já foi '+String(p.status||'processado').toLowerCase()+'.');renderPedidos();return;}
+  var itens=p.itens||[];
+  if(!itens.length){alert('Pedido sem itens.');return;}
+  for(var i=0;i<itens.length;i++){
+    var it=itens[i];var prod=db.products.find(function(x){return x.id===it.id;});
+    if(!prod){ if(!confirm('O produto "'+(it.nome||'?')+'" não está mais no estoque. Concluir mesmo assim (sem baixar esse item)?'))return; }
+    else if((Number(prod.estoque)||0) < (Number(it.qty)||0)){
+      if(!confirm('Estoque insuficiente de "'+it.nome+'" (tem '+(Number(prod.estoque)||0)+', pedido '+it.qty+'). Concluir mesmo assim?'))return;
+    }
+  }
+  if(!confirm('Concluir a venda deste pedido? O estoque será baixado automaticamente.'))return;
+  for(var j=0;j<itens.length;j++){
+    var c=itens[j];var pr=db.products.find(function(x){return x.id===c.id;});
+    if(pr){var novo=Math.max(0,(Number(pr.estoque)||0)-(Number(c.qty)||0));
+      var {error:eu}=await sb.from('loja_produtos').update({estoque:novo}).eq('id',c.id);
+      if(eu){alert('Erro ao baixar estoque: '+eu.message);await fetchAll();return;}}
+  }
+  var total=Number(p.total)||0;
+  var venda={loja_id:LOJA_ID, pedido_id:p.id, cliente_nome:p.cliente_nome||null,
+    itens:itens.map(function(c){return {id:c.id,nome:c.nome,tamanho:c.tamanho,cor:c.cor,qty:c.qty,preco:c.preco,custo:c.custo};}),
+    subtotal:total, desconto:0, acrescimo:0, total:total, forma_pag:p.forma_pgto||'PIX', entrega:false, entrega_taxa:0};
+  var {error:ev}=await sb.from('loja_vendas').insert(venda);
+  if(ev){alert('Erro ao registrar venda: '+ev.message);await fetchAll();return;}
+  await sb.from('loja_pedidos').update({status:'Concluído'}).eq('id',p.id);
+  await fetchAll();renderPedidos();
+  if(typeof toastOk==='function')toastOk('✅ Venda concluída! Estoque baixado — '+money(total));
+}
+async function cancelarPedido(id){
+  if(!confirm('Cancelar este pedido? Ele sai da lista de novos (não baixa estoque).'))return;
+  var {error}=await sb.from('loja_pedidos').update({status:'Cancelado'}).eq('id',id);
+  if(error){alert('Erro: '+error.message);return;}
+  renderPedidos();
+}
+async function togglePagoPedido(id,val){
+  var {error}=await sb.from('loja_pedidos').update({pago:val}).eq('id',id);
+  if(error){alert('Erro: '+error.message);return;}
+  renderPedidos();
+}
+async function atualizaPedBadge(todos){
+  var badge=$('pedBadge'); if(!badge)return;
+  var novos=0;
+  if(Array.isArray(todos)){novos=todos.filter(function(p){return p.status==='Novo';}).length;}
+  else{ try{var r=await sb.from('loja_pedidos').select('id',{count:'exact',head:true}).eq('loja_id',LOJA_ID).eq('status','Novo');novos=r.count||0;}catch(e){novos=0;} }
+  if(novos>0){badge.textContent=novos;badge.style.display='';}else{badge.style.display='none';}
+}
+
 function renderFiscal(){
   if(!LOJA)return;
   const set=(id,v)=>{const el=$(id);if(el)el.value=(v==null?'':v);};
@@ -1290,13 +1436,33 @@ function applyPerms(){
     var hostC=document.getElementById('tab-painel');
     if(hostC&&hostC.parentNode)hostC.parentNode.appendChild(secC);
   }
+  // injeta a aba Pedidos (uma vez) — vem logo depois de Vendas
+  if(!document.querySelector('#tabs button[data-tab="pedidos"]')){
+    var navP=document.getElementById('tabs');
+    var bp=document.createElement('button');bp.dataset.tab='pedidos';bp.id='btnTabPedidos';
+    bp.innerHTML='🛎️ Pedidos <span id="pedBadge" style="display:none;background:var(--red);color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;margin-left:4px;font-weight:800"></span>';
+    bp.onclick=function(){setTab('pedidos');};
+    var afterP=document.querySelector('#tabs button[data-tab="vendas"]');
+    if(afterP&&afterP.nextSibling)navP.insertBefore(bp,afterP.nextSibling); else navP.appendChild(bp);
+    var secP=document.createElement('section');secP.id='tab-pedidos';secP.className='hide';
+    secP.innerHTML='<div class="panel" id="vitrineBox" style="margin-bottom:14px"></div>'+
+      '<div class="panel"><div class="toolbar"><h3 style="font-size:15px;flex:1;margin:0">🛎️ Pedidos da vitrine</h3>'+
+      '<select id="pedFiltro" onchange="renderPedidos()" style="max-width:220px"><option value="ativos">Novos + em aberto</option><option value="Novo">Só novos</option><option value="Concluído">Concluídos</option><option value="Cancelado">Cancelados</option><option value="todos">Todos</option></select>'+
+      '<button class="btn ghost sm" onclick="renderPedidos()">🔄 Atualizar</button>'+
+      '</div><div id="pedidosList"></div></div>';
+    var hostP=document.getElementById('tab-painel');
+    if(hostP&&hostP.parentNode)hostP.parentNode.appendChild(secP);
+  }
   // Abas por permissão
   document.querySelectorAll('#tabs button[data-tab]').forEach(function(b){
     var t=b.dataset.tab;
     if(t==='fiscal'){b.style.display=(ehDono()&&temPlanoNF())?'':'none';return;}
     if(t==='usuarios'){return;}
+    if(t==='pedidos'){b.style.display=(PERMS.venda||PERMS.vendas)?'':'none';return;}
     if(['painel','estoque','venda','vendas','entregas','caixa','financeiro'].indexOf(t)>=0){b.style.display=PERMS[t]?'':'none';}
   });
+  if(typeof atualizaPedBadge==='function')atualizaPedBadge();
+  if(!window.__pedPoll){window.__pedPoll=setInterval(function(){if(typeof atualizaPedBadge==='function')atualizaPedBadge();},60000);}
   // Botões do topo (Personalizar/Exportar) só pro dono
   document.querySelectorAll('header.top button').forEach(function(b){
     var tx=b.textContent||'';
