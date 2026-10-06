@@ -116,6 +116,7 @@
   <!-- PAINEL -->
   <section id="tab-painel">
     <div class="kpis" id="kpis"></div>
+    <div class="panel" id="chartsPanel" style="margin-bottom:14px"></div>
     <div class="panel">
       <h3 style="margin-bottom:10px;font-size:15px">Estoque baixo (repor)</h3>
       <div id="lowList"></div>
@@ -298,6 +299,10 @@
     <div class="body">
       <input type="hidden" id="pId">
       <div class="field"><label>Nome do produto *</label><input id="pNome" placeholder="Ex: Camiseta básica"></div>
+      <div class="field"><label>Foto do produto <span class="muted" style="font-weight:400">(aparece na vitrine online)</span></label>
+        <input type="file" id="pFotoInput" accept="image/*" onchange="onFotoSelect(this)" style="font-size:13px">
+        <div id="pFotoPrev" style="display:flex;align-items:center;gap:10px;margin-top:8px"></div>
+      </div>
       <div class="grid3">
         <div class="field"><label>Categoria</label><input id="pCat" list="catList" placeholder="Ex: Camiseta"><datalist id="catList"></datalist></div>
         <div class="field"><label>Tamanho</label><input id="pTam" list="tamList" placeholder="P, M, G..."><datalist id="tamList"><option>PP</option><option>P</option><option>M</option><option>G</option><option>GG</option><option>Único</option></datalist></div>
@@ -492,7 +497,52 @@ function sugestaoCompra(p){
   return Math.max(alvo-est, 1);
 }
 function vendasDoDia(){const h=hojeISO();return db.sales.filter(s=>(s.data||'').slice(0,10)===h);}
+function vendas7dias(){
+  var dias=[]; var hoje=new Date(); hoje.setHours(0,0,0,0);
+  for(var i=6;i>=0;i--){ var d=new Date(hoje); d.setDate(d.getDate()-i); dias.push({label:d.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.',''), iso:d.toISOString().slice(0,10), total:0}); }
+  (db.sales||[]).forEach(function(s){ var iso=(s.data||'').slice(0,10); for(var k=0;k<dias.length;k++){ if(dias[k].iso===iso){dias[k].total+=Number(s.total)||0;break;} } });
+  return dias;
+}
+function topProdutos(n){
+  var map={};
+  (db.sales||[]).forEach(function(s){(s.itens||[]).forEach(function(i){var k=(i.nome||'?')+'|'+(i.tamanho||'')+'|'+(i.cor||'');if(!map[k])map[k]={nome:i.nome,tam:i.tamanho,cor:i.cor,qty:0,val:0};map[k].qty+=Number(i.qty)||0;map[k].val+=(Number(i.qty)||0)*(Number(i.preco)||0);});});
+  return Object.keys(map).map(function(k){return map[k];}).sort(function(a,b){return b.qty-a.qty;}).slice(0,n||5);
+}
+function chartBarras(dias){
+  var max=Math.max.apply(null,[1].concat(dias.map(function(x){return x.total;})));
+  var W=560,H=180,pad=30,bw=W/dias.length;
+  var bars=dias.map(function(x,i){
+    var h=Math.round((x.total/max)*(H-pad*2));
+    var bx=i*bw+bw*0.18, by=H-pad-h, w=bw*0.64;
+    return '<rect x="'+bx.toFixed(1)+'" y="'+by.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+Math.max(h,2)+'" rx="5" fill="url(#gbar)"/>'+
+      (x.total>0?'<text x="'+(bx+w/2).toFixed(1)+'" y="'+(by-6).toFixed(1)+'" text-anchor="middle" font-size="10.5" fill="#c6cede">R$'+Math.round(x.total)+'</text>':'')+
+      '<text x="'+(bx+w/2).toFixed(1)+'" y="'+(H-10)+'" text-anchor="middle" font-size="11" fill="#9aa6bd">'+esc(x.label)+'</text>';
+  }).join('');
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" preserveAspectRatio="xMidYMid meet"><defs><linearGradient id="gbar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--brand2)"/><stop offset="1" stop-color="var(--brand)"/></linearGradient></defs>'+bars+'</svg>';
+}
+function chartTop(list){
+  if(!list.length)return '<div class="empty" style="padding:16px">Sem vendas ainda pra montar o ranking. Assim que vender, aparece aqui. 😉</div>';
+  var max=Math.max.apply(null,[1].concat(list.map(function(x){return x.qty;})));
+  return '<div style="display:flex;flex-direction:column;gap:10px">'+list.map(function(x){
+    var pct=Math.round((x.qty/max)*100);
+    var sub=[x.tam,x.cor].filter(Boolean).join(' ');
+    return '<div><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;gap:8px"><b>'+esc(x.nome)+(sub?' <span class="muted" style="font-weight:400">'+esc(sub)+'</span>':'')+'</b><span class="muted">'+x.qty+' un · '+money(x.val)+'</span></div>'+
+      '<div style="background:var(--panel2);border-radius:20px;height:12px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:linear-gradient(90deg,var(--brand),var(--green));border-radius:20px"></div></div></div>';
+  }).join('')+'</div>';
+}
+function renderCharts(){
+  var cp=$('chartsPanel'); if(!cp)return;
+  var d7=vendas7dias(); var tot7=d7.reduce(function(a,x){return a+x.total;},0);
+  cp.innerHTML=
+    '<div style="display:grid;grid-template-columns:1fr;gap:18px">'+
+      '<div><h3 style="font-size:15px;margin-bottom:2px">📈 Vendas dos últimos 7 dias</h3>'+
+        '<div class="muted" style="font-size:12.5px;margin-bottom:10px">Total na semana: <b style="color:var(--ink)">'+money(tot7)+'</b></div>'+
+        chartBarras(d7)+'</div>'+
+      '<div><h3 style="font-size:15px;margin:4px 0 12px">🏆 Produtos mais vendidos</h3>'+chartTop(topProdutos(5))+'</div>'+
+    '</div>';
+}
 function renderPainel(){
+  renderCharts();
   const un=db.products.reduce((a,p)=>a+(Number(p.estoque)||0),0);
   const valCusto=db.products.reduce((a,p)=>a+(Number(p.estoque)||0)*(Number(p.custo)||0),0);
   const valVenda=db.products.reduce((a,p)=>a+(Number(p.estoque)||0)*(Number(p.preco)||0),0);
@@ -546,7 +596,7 @@ function renderEstoque(){
   list.forEach(p=>{
     const est=Number(p.estoque)||0;
     h+=`<tr>
-      <td><b>${esc(p.nome)}</b>${p.sku?` <span class="chip">${esc(p.sku)}</span>`:''}</td>
+      <td>${p.foto?`<img src="${p.foto}" style="width:30px;height:30px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:7px">`:''}<b>${esc(p.nome)}</b>${p.sku?` <span class="chip">${esc(p.sku)}</span>`:''}</td>
       <td>${p.categoria?`<span class="chip">${esc(p.categoria)}</span>`:'—'}</td>
       <td>${esc(p.tamanho||'—')}</td>
       <td>${esc(p.cor||'—')}</td>
@@ -573,9 +623,38 @@ function openProduct(id){
   $('pEstoque').value=p?(p.estoque??''):'';
   $('pMin').value=p?(p.minimo??''):'';
   $('pSku').value=p?(p.sku||''):'';
+  _prodFoto = p?(p.foto||''):'';
+  if($('pFotoInput'))$('pFotoInput').value='';
+  mostrarFotoPreview();
   $('pDel').classList.toggle('hide',!p);
   showModal('prodOverlay');
 }
+var _prodFoto='';
+function onFotoSelect(input){
+  var f=input.files && input.files[0]; if(!f)return;
+  if(!/^image\//.test(f.type)){alert('Selecione um arquivo de imagem (jpg, png...).');return;}
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var img=new Image();
+    img.onload=function(){
+      var max=800, w=img.width, h=img.height;
+      if(w>h && w>max){h=Math.round(h*max/w);w=max;} else if(h>=w && h>max){w=Math.round(w*max/h);h=max;}
+      var cv=document.createElement('canvas');cv.width=w;cv.height=h;
+      var cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,w,h);cx.drawImage(img,0,0,w,h);
+      try{_prodFoto=cv.toDataURL('image/jpeg',0.72);}catch(e){alert('Não consegui processar essa imagem.');return;}
+      mostrarFotoPreview();
+    };
+    img.onerror=function(){alert('Não consegui ler essa imagem.');};
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(f);
+}
+function mostrarFotoPreview(){
+  var box=$('pFotoPrev'); if(!box)return;
+  if(_prodFoto){box.innerHTML='<img src="'+_prodFoto+'" style="width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid var(--line)"><button type="button" class="btn ghost sm" onclick="removerFoto()">🗑️ Remover foto</button>';}
+  else{box.innerHTML='<span class="muted" style="font-size:12.5px">Sem foto ainda. A foto deixa a vitrine muito mais atraente. 📸</span>';}
+}
+function removerFoto(){_prodFoto='';var fi=$('pFotoInput');if(fi)fi.value='';mostrarFotoPreview();}
 function saveProduct(){
   const err=$('pErr');err.textContent='';
   const nome=$('pNome').value.trim();
@@ -939,7 +1018,7 @@ async function fetchAll(){
     sb.from('loja_compras').select('*').eq('loja_id',LOJA_ID).order('data',{ascending:false}),
     sb.from('loja_despesas').select('*').eq('loja_id',LOJA_ID).order('data',{ascending:false})
   ]);
-  db.products=(prod||[]).map(r=>({id:r.id,nome:r.nome,categoria:r.categoria,tamanho:r.tamanho,cor:r.cor,custo:Number(r.custo)||0,preco:Number(r.preco)||0,estoque:Number(r.estoque)||0,minimo:Number(r.minimo)||0,sku:r.sku,ncm:r.ncm,cfop:r.cfop,csosn:r.csosn}));
+  db.products=(prod||[]).map(r=>({id:r.id,nome:r.nome,categoria:r.categoria,tamanho:r.tamanho,cor:r.cor,custo:Number(r.custo)||0,preco:Number(r.preco)||0,estoque:Number(r.estoque)||0,minimo:Number(r.minimo)||0,sku:r.sku,ncm:r.ncm,cfop:r.cfop,csosn:r.csosn,foto:r.foto||''}));
   db.sales=(vend||[]).map(r=>({id:r.id,data:r.criado_em,itens:r.itens||[],subtotal:Number(r.subtotal)||0,desconto:Number(r.desconto)||0,acrescimo:Number(r.acrescimo)||0,total:Number(r.total)||0,pagamento:r.forma_pag,
     entrega:r.entrega===true,entregaStatus:r.entrega_status,entregaTaxa:Number(r.entrega_taxa)||0,entregaCliente:r.entrega_cliente,entregaFone:r.entrega_fone,entregaEndereco:r.entrega_endereco}));
   db.purchases=(comp||[]).map(r=>({id:r.id,data:r.data,produtoId:r.produto_id,produtoNome:r.produto_nome,tamanho:r.tamanho,cor:r.cor,qty:Number(r.qty)||0,custoUnit:Number(r.custo_unit)||0,total:Number(r.total)||0,obs:r.obs}));
@@ -1004,7 +1083,7 @@ async function saveProduct(){
   if(isNaN(preco)||preco<0){err.textContent='Informe um preço de venda válido.';return;}
   if(isNaN(est)||est<0){err.textContent='Informe a quantidade em estoque.';return;}
   const id=$('pId').value;
-  const rec={loja_id:LOJA_ID,nome,categoria:$('pCat').value.trim(),tamanho:$('pTam').value.trim(),cor:$('pCor').value.trim(),custo:parseFloat($('pCusto').value)||0,preco,estoque:est,minimo:parseInt($('pMin').value)||0,sku:$('pSku').value.trim(),ncm:$('pNcm').value.trim(),cfop:$('pCfop').value.trim(),csosn:$('pCsosn').value.trim()};
+  const rec={loja_id:LOJA_ID,nome,categoria:$('pCat').value.trim(),tamanho:$('pTam').value.trim(),cor:$('pCor').value.trim(),custo:parseFloat($('pCusto').value)||0,preco,estoque:est,minimo:parseInt($('pMin').value)||0,sku:$('pSku').value.trim(),ncm:$('pNcm').value.trim(),cfop:$('pCfop').value.trim(),csosn:$('pCsosn').value.trim(),foto:_prodFoto||null};
   err.textContent='Salvando...';
   let e;
   if(id){({error:e}=await sb.from('loja_produtos').update(rec).eq('id',id));}
