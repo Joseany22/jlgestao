@@ -198,6 +198,7 @@
         <div style="flex:1;min-width:150px"><label>Forma de pagamento</label>
           <select id="vPag" onchange="renderVendas()"><option value="">Todas as formas</option><option>Dinheiro</option><option>PIX</option><option>Cartão débito</option><option>Cartão crédito</option><option>Fiado</option></select>
         </div>
+        <div style="display:flex;align-items:flex-end"><button class="btn primary" onclick="abrirTroca()">🔄 Troca</button></div>
       </div>
       <div class="kpis" id="vendasKpis" style="margin-bottom:12px"></div>
       <div id="vendasPorPag" style="margin-bottom:14px"></div>
@@ -343,6 +344,41 @@
     <header><h3>Detalhe da venda</h3><button class="x" onclick="closeModal('saleOverlay')">×</button></header>
     <div class="body" id="saleBody"></div>
     <footer><div style="flex:1"></div><button class="btn ghost" onclick="closeModal('saleOverlay')">Fechar</button></footer>
+  </div>
+</div>
+
+<!-- Modal troca -->
+<div class="overlay" id="trocaOverlay">
+  <div class="modal" style="max-width:720px">
+    <header><h3>🔄 Troca de produto</h3><button class="x" onclick="closeModal('trocaOverlay')">×</button></header>
+    <div class="body">
+      <p class="muted" style="font-size:12.5px;margin-bottom:12px">O cliente devolve uma peça (volta pro estoque) e leva outra (sai do estoque). O sistema acerta a diferença.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" class="trocacols">
+        <div>
+          <h4 style="font-size:13.5px;margin-bottom:6px;color:var(--red)">↩️ Produto devolvido (cliente trouxe)</h4>
+          <input class="search" id="qTrocaDev" placeholder="🔎 Buscar produto devolvido..." oninput="renderTrocaBusca('dev')" style="margin-bottom:6px">
+          <div id="trocaDevBusca" style="max-height:150px;overflow:auto"></div>
+          <div id="trocaDevCart" style="margin-top:8px"></div>
+        </div>
+        <div>
+          <h4 style="font-size:13.5px;margin-bottom:6px;color:var(--green)">🛍️ Produto novo (cliente leva)</h4>
+          <input class="search" id="qTrocaNovo" placeholder="🔎 Buscar produto novo..." oninput="renderTrocaBusca('novo')" style="margin-bottom:6px">
+          <div id="trocaNovoBusca" style="max-height:150px;overflow:auto"></div>
+          <div id="trocaNovoCart" style="margin-top:8px"></div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--line);margin-top:14px;padding-top:12px">
+        <div class="totline"><span class="muted">Valor devolvido</span><span id="trocaValDev">R$ 0,00</span></div>
+        <div class="totline"><span class="muted">Valor dos novos</span><span id="trocaValNovo">R$ 0,00</span></div>
+        <div class="totline big"><span id="trocaDifLabel">Diferença</span><span id="trocaDif">R$ 0,00</span></div>
+        <div class="field" id="trocaPagBox" style="margin-top:8px;display:none">
+          <label id="trocaPagLabel">Forma de pagamento da diferença</label>
+          <select id="trocaPag"><option>Dinheiro</option><option>PIX</option><option>Cartão débito</option><option>Cartão crédito</option><option>Fiado</option></select>
+        </div>
+        <div class="err" id="trocaErr"></div>
+      </div>
+    </div>
+    <footer><div style="flex:1"></div><button class="btn ghost" onclick="closeModal('trocaOverlay')">Cancelar</button><button class="btn primary" onclick="processarTroca()">Confirmar troca</button></footer>
   </div>
 </div>
 
@@ -817,9 +853,14 @@ function renderVendas(){
   const totVend=list.reduce((a,s)=>a+(Number(s.total)||0),0);
   const lucro=list.reduce((a,s)=>{
     const ip=(s.itens||[]).reduce((x,i)=>x+((Number(i.preco)||0)-(Number(i.custo)||0))*(Number(i.qty)||0),0);
-    return a+ip-(Number(s.desconto)||0)+(Number(s.acrescimo)||0);
+    const dv=(s.tipo==='troca')?(s.trocaDev||[]).reduce((x,i)=>x+((Number(i.preco)||0)-(Number(i.custo)||0))*(Number(i.qty)||0),0):0;
+    return a+ip-dv-(Number(s.desconto)||0)+(Number(s.acrescimo)||0);
   },0);
-  const cmv=list.reduce((a,s)=>a+(s.itens||[]).reduce((x,i)=>x+(Number(i.custo)||0)*(Number(i.qty)||0),0),0);
+  const cmv=list.reduce((a,s)=>{
+    const cn=(s.itens||[]).reduce((x,i)=>x+(Number(i.custo)||0)*(Number(i.qty)||0),0);
+    const cd=(s.tipo==='troca')?(s.trocaDev||[]).reduce((x,i)=>x+(Number(i.custo)||0)*(Number(i.qty)||0),0):0;
+    return a+cn-cd;
+  },0);
   const margem = totVend>0 ? (lucro/totVend*100) : 0;
   const nVendas=list.length;
   const ticket=nVendas?totVend/nVendas:0;
@@ -844,7 +885,7 @@ function renderVendas(){
     const dt=new Date(s.data);const q=(s.itens||[]).reduce((a,i)=>a+(Number(i.qty)||0),0);
     h+=`<tr>
       <td>${isNaN(dt)?'—':dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td>
-      <td>${q} item(ns)</td>
+      <td>${q} item(ns)${s.tipo==='troca'?' <span class="chip" style="background:rgba(124,92,255,.15);color:var(--brand2)">🔄 Troca</span>':''}</td>
       <td><span class="chip">${esc(s.pagamento||'—')}</span></td>
       <td class="right"><b>${money(s.total)}</b></td>
       <td class="right"><button class="btn sm" onclick="verVenda('${s.id}')">ver</button></td>
@@ -856,6 +897,21 @@ function renderVendas(){
 function verVenda(id){
   const s=db.sales.find(x=>x.id===id);if(!s)return;
   const dt=new Date(s.data);
+  const ehTroca = s.tipo==='troca';
+  const tbl=(itens,titulo,cor)=>`<div class="muted" style="font-size:12.5px;margin:10px 0 4px${cor?`;color:${cor}`:''}">${titulo}</div><div class="tablewrap"><table><thead><tr><th>Produto</th><th class="center">Qtd</th><th class="right">Preço</th><th class="right">Total</th></tr></thead><tbody>${(itens||[]).map(i=>`<tr><td>${esc(i.nome)} <span class="muted">${esc([i.tamanho,i.cor].filter(Boolean).join(' · '))}</span></td><td class="center">${i.qty}</td><td class="right">${money(i.preco)}</td><td class="right">${money(i.preco*i.qty)}</td></tr>`).join('')}</tbody></table></div>`;
+  if(ehTroca){
+    const vdev=(s.trocaDev||[]).reduce((a,i)=>a+(Number(i.preco)||0)*(Number(i.qty)||0),0);
+    const vnovo=(s.itens||[]).reduce((a,i)=>a+(Number(i.preco)||0)*(Number(i.qty)||0),0);
+    const dif=Number(s.total)||0;
+    $('saleBody').innerHTML=`
+      <p class="muted" style="margin-bottom:6px">${isNaN(dt)?'':dt.toLocaleString('pt-BR')} • <b style="color:var(--brand2)">🔄 Troca</b></p>
+      ${tbl(s.trocaDev,'↩️ Devolvido (voltou pro estoque)','var(--red)')}
+      ${tbl(s.itens,'🛍️ Novo (saiu do estoque)','var(--green)')}
+      <div class="totline" style="margin-top:12px"><span class="muted">Valor devolvido</span><span>${money(vdev)}</span></div>
+      <div class="totline"><span class="muted">Valor dos novos</span><span>${money(vnovo)}</span></div>
+      <div class="totline big"><span>${dif>0?('Cliente pagou ('+esc(s.pagamento||'')+')'):(dif<0?'Devolvido ao cliente':'Sem diferença')}</span><span>${money(Math.abs(dif))}</span></div>`;
+    showModal('saleOverlay');return;
+  }
   $('saleBody').innerHTML=`
     <p class="muted" style="margin-bottom:10px">${isNaN(dt)?'':dt.toLocaleString('pt-BR')} • ${esc(s.pagamento||'')}</p>
     <div class="tablewrap"><table><thead><tr><th>Produto</th><th class="center">Qtd</th><th class="right">Preço</th><th class="right">Total</th></tr></thead><tbody>
@@ -1020,6 +1076,7 @@ async function fetchAll(){
   ]);
   db.products=(prod||[]).map(r=>({id:r.id,nome:r.nome,categoria:r.categoria,tamanho:r.tamanho,cor:r.cor,custo:Number(r.custo)||0,preco:Number(r.preco)||0,estoque:Number(r.estoque)||0,minimo:Number(r.minimo)||0,sku:r.sku,ncm:r.ncm,cfop:r.cfop,csosn:r.csosn,foto:r.foto||''}));
   db.sales=(vend||[]).map(r=>({id:r.id,data:r.criado_em,itens:r.itens||[],subtotal:Number(r.subtotal)||0,desconto:Number(r.desconto)||0,acrescimo:Number(r.acrescimo)||0,total:Number(r.total)||0,pagamento:r.forma_pag,
+    tipo:r.tipo||'venda',trocaDev:r.troca_devolvidos||[],
     entrega:r.entrega===true,entregaStatus:r.entrega_status,entregaTaxa:Number(r.entrega_taxa)||0,entregaCliente:r.entrega_cliente,entregaFone:r.entrega_fone,entregaEndereco:r.entrega_endereco}));
   db.purchases=(comp||[]).map(r=>({id:r.id,data:r.data,produtoId:r.produto_id,produtoNome:r.produto_nome,tamanho:r.tamanho,cor:r.cor,qty:Number(r.qty)||0,custoUnit:Number(r.custo_unit)||0,total:Number(r.total)||0,obs:r.obs}));
   db.despesas=(desp||[]).map(r=>({id:r.id,data:r.data,descricao:r.descricao,categoria:r.categoria,valor:Number(r.valor)||0}));
@@ -1771,6 +1828,104 @@ async function fecharCaixa(){
   var {error}=await sb.from('loja_caixa').update({status:'fechado',fechado_em:new Date().toISOString(),fechado_por:MEU_EMAIL,valor_informado:informado,valor_esperado:esperado,diferenca:dif}).eq('id',window.__caixaId);
   if(error){flashErrCx('Erro: '+error.message);return;}
   toastOk('✅ Caixa fechado — '+msg); renderCaixa();
+}
+
+/* ========= TROCA DE PRODUTO ========= */
+let trocaDev=[], trocaNovo=[];
+function abrirTroca(){
+  trocaDev=[]; trocaNovo=[];
+  if($('qTrocaDev'))$('qTrocaDev').value='';
+  if($('qTrocaNovo'))$('qTrocaNovo').value='';
+  if($('trocaErr'))$('trocaErr').textContent='';
+  renderTrocaBusca('dev'); renderTrocaBusca('novo'); renderTrocaCarts();
+  showModal('trocaOverlay');
+}
+function renderTrocaBusca(tipo){
+  var inp=tipo==='dev'?'qTrocaDev':'qTrocaNovo';
+  var box=tipo==='dev'?'trocaDevBusca':'trocaNovoBusca';
+  if(!$(inp)||!$(box))return;
+  var q=($(inp).value||'').toLowerCase().trim();
+  if(!q){$(box).innerHTML='';return;}
+  var list=db.products.filter(function(p){
+    var okq=(p.nome+' '+(p.cor||'')+' '+(p.tamanho||'')+' '+(p.sku||'')).toLowerCase().indexOf(q)>=0;
+    if(tipo==='novo')return okq && (Number(p.estoque)||0)>0;
+    return okq;
+  }).slice(0,30);
+  if(!list.length){$(box).innerHTML='<div class="empty" style="padding:8px">Nenhum produto.</div>';return;}
+  $(box).innerHTML=list.map(function(p){
+    return '<div class="prodpick" onclick="addTroca(\''+tipo+'\',\''+p.id+'\')"><div class="info"><b>'+esc(p.nome)+'</b> <span class="muted">'+esc([p.tamanho,p.cor].filter(Boolean).join(' · '))+'</span>'+
+      (tipo==='novo'?'<div class="muted" style="font-size:11px">Estoque: '+(Number(p.estoque)||0)+'</div>':'')+
+      '</div><div class="right"><b>'+money(p.preco)+'</b><br><span class="pill">+ add</span></div></div>';
+  }).join('');
+}
+function _trocaArr(tipo){return tipo==='dev'?trocaDev:trocaNovo;}
+function addTroca(tipo,id){
+  var p=db.products.find(function(x){return x.id===id;}); if(!p)return;
+  var arr=_trocaArr(tipo);
+  var it=arr.find(function(c){return c.id===id;});
+  if(tipo==='novo'){
+    var disp=Number(p.estoque)||0;
+    if(it){ if(it.qty>=disp){flashTrocaErr('Sem estoque suficiente de '+p.nome);return;} it.qty++; }
+    else{ if(disp<1){flashTrocaErr('Sem estoque de '+p.nome);return;} arr.push({id:p.id,nome:p.nome,tamanho:p.tamanho,cor:p.cor,preco:Number(p.preco)||0,custo:Number(p.custo)||0,qty:1}); }
+  }else{
+    if(it){ it.qty++; }
+    else{ arr.push({id:p.id,nome:p.nome,tamanho:p.tamanho,cor:p.cor,preco:Number(p.preco)||0,custo:Number(p.custo)||0,qty:1}); }
+  }
+  renderTrocaCarts();
+}
+function chTroca(tipo,id,delta){
+  var arr=_trocaArr(tipo); var it=arr.find(function(c){return c.id===id;}); if(!it)return;
+  it.qty+=delta;
+  if(it.qty<=0){ if(tipo==='dev')trocaDev=trocaDev.filter(function(c){return c.id!==id;}); else trocaNovo=trocaNovo.filter(function(c){return c.id!==id;}); }
+  else if(tipo==='novo'){ var p=db.products.find(function(x){return x.id===id;}); var disp=p?(Number(p.estoque)||0):0; if(it.qty>disp){it.qty=disp;flashTrocaErr('Máximo em estoque: '+disp);} }
+  renderTrocaCarts();
+}
+function _trocaCartHtml(tipo){
+  var arr=_trocaArr(tipo);
+  if(!arr.length)return '<div class="muted" style="font-size:12px;padding:6px">Nenhum item.</div>';
+  return arr.map(function(c){
+    return '<div class="cartitem"><div class="nm"><b>'+esc(c.nome)+'</b><br><span class="muted" style="font-size:11px">'+esc([c.tamanho,c.cor].filter(Boolean).join(' · '))+' • '+money(c.preco)+'</span></div>'+
+      '<button class="qtybtn" onclick="chTroca(\''+tipo+'\',\''+c.id+'\',-1)">−</button><span style="min-width:20px;text-align:center">'+c.qty+'</span><button class="qtybtn" onclick="chTroca(\''+tipo+'\',\''+c.id+'\',1)">+</button>'+
+      '<span style="min-width:60px;text-align:right;font-weight:700">'+money(c.preco*c.qty)+'</span></div>';
+  }).join('');
+}
+function renderTrocaCarts(){
+  if($('trocaDevCart'))$('trocaDevCart').innerHTML=_trocaCartHtml('dev');
+  if($('trocaNovoCart'))$('trocaNovoCart').innerHTML=_trocaCartHtml('novo');
+  var vdev=trocaDev.reduce(function(a,c){return a+c.preco*c.qty;},0);
+  var vnovo=trocaNovo.reduce(function(a,c){return a+c.preco*c.qty;},0);
+  var dif=vnovo-vdev;
+  if($('trocaValDev'))$('trocaValDev').textContent=money(vdev);
+  if($('trocaValNovo'))$('trocaValNovo').textContent=money(vnovo);
+  if($('trocaDif'))$('trocaDif').textContent=money(Math.abs(dif));
+  var lbl=$('trocaDifLabel'), boxp=$('trocaPagBox'), plbl=$('trocaPagLabel');
+  if(!lbl)return;
+  if(dif>0){ lbl.textContent='Cliente paga a diferença'; if(boxp)boxp.style.display=''; if(plbl)plbl.textContent='Forma de pagamento da diferença'; }
+  else if(dif<0){ lbl.textContent='Devolver ao cliente'; if(boxp)boxp.style.display=''; if(plbl)plbl.textContent='Como você devolveu ao cliente'; }
+  else { lbl.textContent='Diferença (troca sem diferença)'; if(boxp)boxp.style.display='none'; }
+}
+function flashTrocaErr(m){var e=$('trocaErr');if(e){e.textContent=m;setTimeout(function(){if(e.textContent===m)e.textContent='';},2500);}}
+async function processarTroca(){
+  var e=$('trocaErr'); e.textContent='';
+  if(!trocaDev.length){e.textContent='Escolha o produto que o cliente está devolvendo.';return;}
+  if(!trocaNovo.length){e.textContent='Escolha o produto novo que o cliente vai levar.';return;}
+  for(var i=0;i<trocaNovo.length;i++){var cc=trocaNovo[i];var pp=db.products.find(function(x){return x.id===cc.id;});if(!pp||(Number(pp.estoque)||0)<cc.qty){e.textContent='Sem estoque suficiente de '+cc.nome;return;}}
+  var vdev=trocaDev.reduce(function(a,c){return a+c.preco*c.qty;},0);
+  var vnovo=trocaNovo.reduce(function(a,c){return a+c.preco*c.qty;},0);
+  var dif=vnovo-vdev;
+  e.textContent='Processando...';
+  for(var d=0;d<trocaDev.length;d++){var cd=trocaDev[d];var pd=db.products.find(function(x){return x.id===cd.id;});var est1=(Number(pd?pd.estoque:0)||0)+cd.qty;var r1=await sb.from('loja_produtos').update({estoque:est1}).eq('id',cd.id);if(r1.error){e.textContent='Erro ao devolver estoque: '+r1.error.message;await fetchAll();return;}}
+  for(var n=0;n<trocaNovo.length;n++){var cn=trocaNovo[n];var pn=db.products.find(function(x){return x.id===cn.id;});var est2=Math.max(0,(Number(pn?pn.estoque:0)||0)-cn.qty);var r2=await sb.from('loja_produtos').update({estoque:est2}).eq('id',cn.id);if(r2.error){e.textContent='Erro ao baixar estoque: '+r2.error.message;await fetchAll();return;}}
+  var reg={loja_id:LOJA_ID, tipo:'troca',
+    itens:trocaNovo.map(function(c){return {id:c.id,nome:c.nome,tamanho:c.tamanho,cor:c.cor,qty:c.qty,preco:c.preco,custo:c.custo};}),
+    troca_devolvidos:trocaDev.map(function(c){return {id:c.id,nome:c.nome,tamanho:c.tamanho,cor:c.cor,qty:c.qty,preco:c.preco,custo:c.custo};}),
+    subtotal:dif, desconto:0, acrescimo:0, total:dif, forma_pag:(dif===0?'Troca':$('trocaPag').value), entrega:false, entrega_taxa:0};
+  var rv=await sb.from('loja_vendas').insert(reg);
+  if(rv.error){e.textContent='Erro ao registrar troca: '+rv.error.message;await fetchAll();return;}
+  closeModal('trocaOverlay');
+  await fetchAll(); if(typeof renderVendas==='function')renderVendas(); if(typeof renderEstoque==='function')renderEstoque(); if(typeof renderPainel==='function')renderPainel();
+  var msg=dif>0?('cliente pagou '+money(dif)):(dif<0?('devolvido '+money(-dif)+' ao cliente'):'sem diferença');
+  if(typeof toastOk==='function')toastOk('🔄 Troca registrada — '+msg+'. Estoque atualizado.');
 }
 
 /* inicia na nuvem */
